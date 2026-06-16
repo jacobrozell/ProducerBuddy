@@ -22,7 +22,7 @@ struct FullPlayerView: View {
             artwork
             titleBlock
             if let mixes = song?.mixes, mixes.count > 1 {
-                mixPicker(mixes)
+                mixPicker(sortedMixes)
             }
             scrubber
             transport
@@ -100,30 +100,50 @@ struct FullPlayerView: View {
     }
 
     private var subtitle: String {
-        let mixName = audioPlayer.currentMix?.name ?? ""
+        let mixName = audioPlayer.currentMix?.displayName ?? ""
         guard let song, !song.artist.isEmpty else { return mixName }
         return "\(song.artist) · \(mixName)"
     }
 
-    private func mixPicker(_ mixes: [Mix]) -> some View {
-        Picker("Mix", selection: mixSelection) {
-            ForEach(mixes.sorted(by: { $0.dateAdded < $1.dateAdded })) { mix in
-                Text(mix.name).tag(mix.id)
-            }
-        }
-        .pickerStyle(.segmented)
+    private var sortedMixes: [Mix] {
+        song?.orderedMixes ?? []
     }
 
-    /// Binding that drives the A/B mix picker, swapping mixes in place.
-    private var mixSelection: Binding<UUID> {
-        Binding(
-            get: { audioPlayer.currentMix?.id ?? UUID() },
-            set: { newID in
-                if let mix = song?.mixes.first(where: { $0.id == newID }) {
-                    audioPlayer.switchMix(to: mix)
+    @ViewBuilder
+    private func mixPicker(_ mixes: [Mix]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(mixes) { mix in
+                    mixChip(mix)
                 }
             }
-        )
+            .padding(.horizontal, 2)
+        }
+    }
+
+    private func mixChip(_ mix: Mix) -> some View {
+        let isSelected = audioPlayer.currentMix?.id == mix.id
+        return Button {
+            if audioPlayer.currentMix?.id != mix.id {
+                audioPlayer.switchMix(to: mix)
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if mix.isPrimary {
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                }
+                Text(mix.displayName)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.accentColor : Color(.secondarySystemBackground), in: Capsule())
+            .foregroundStyle(isSelected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(mix.displayName)\(mix.isPrimary ? ", primary" : "")")
     }
 
     @ViewBuilder
@@ -230,8 +250,8 @@ struct FullPlayerView: View {
         .tint(.primary)
     }
 
-    private func format(_ t: Double) -> String {
-        let s = Int(t.rounded())
-        return String(format: "%d:%02d", s / 60, s % 60)
+    private func format(_ time: Double) -> String {
+        let totalSeconds = Int(time.rounded())
+        return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 }

@@ -21,6 +21,7 @@ struct AddTracksView: View {
                         systemImage: "music.note",
                         description: Text("Every song in your library is already in this project.")
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List(availableSongs, selection: $selected) { song in
                         VStack(alignment: .leading, spacing: 2) {

@@ -8,11 +8,20 @@ enum A11yID {
         static let importAudio = "library.importAudio"
         static let newSong = "library.newSong"
         static let sortMenu = "library.sortMenu"
+        static let vocalFilter = "library.vocalFilter"
+        static let filtersButton = "library.filtersButton"
+        static let filtersSheet = "library.filtersSheet"
+        static let importProgress = "library.importProgress"
+        static let importResolution = "library.importResolution"
+        static let addToProjectSheet = "library.addToProjectSheet"
     }
     enum Song {
         static let play = "song.play"
         static let detectMetadata = "song.detectMetadata"
         static let shareCard = "song.shareCard"
+        static let vocalMeter = "song.vocalMeter"
+        static let versionStack = "song.versionStack"
+        static let exportPrefix = "song.exportPrefix"
     }
     enum Player {
         static let bar = "player.bar"
@@ -31,6 +40,8 @@ enum A11yID {
     enum Settings {
         static let tab = "settings.tab"
         static let deleteAllData = "settings.deleteAllData"
+        static let loadDemoTracks = "settings.loadDemoTracks"
+        static let organizeLibrary = "settings.organizeLibrary"
         static let tipJar = "settings.tipJar"
     }
 }

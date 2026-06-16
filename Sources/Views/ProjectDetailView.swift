@@ -67,19 +67,33 @@ struct ProjectDetailView: View {
 
     private var summarySection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 8) {
-                if !project.subtitle.isEmpty {
-                    Text(project.subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(spacing: 16) {
-                    stat(value: "\(project.tracks.count)", label: "Tracks")
-                    stat(value: runtime, label: "Runtime")
-                    stat(value: project.kind.displayName, label: "Type")
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.accentColor.gradient)
+                    .frame(width: 52, height: 52)
+                    .overlay {
+                        Image(systemName: "opticaldisc")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                    }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.title)
+                        .font(.title3.bold())
+                    if !project.subtitle.isEmpty {
+                        Text(project.subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding(.vertical, 4)
+
+            HStack(spacing: 16) {
+                stat(value: "\(project.tracks.count)", label: "Tracks")
+                stat(value: runtime, label: "Runtime")
+                stat(value: project.kind.displayName, label: "Type")
+            }
         }
     }
 
@@ -172,7 +186,7 @@ struct ProjectDetailView: View {
             guard let song = track.song else { continue }
             lines.append("\(track.position + 1). \(song.title)")
         }
-        lines.append("\nMade with ProducerBuddy")
+        lines.append("\nMade with MixStack")
         return lines.joined(separator: "\n")
     }
 

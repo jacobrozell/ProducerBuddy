@@ -1,24 +1,28 @@
 import SwiftUI
 import SwiftData
 
-/// Full detail for a single song: metadata, its list of mixes (with import and
-/// per-mix actions), and a share entry point for marketing.
+/// Full detail for a single song: metadata, export prefix, version stack, sharing.
 struct SongDetailView: View {
     @Bindable var song: Song
     @Environment(\.modelContext) private var modelContext
     @Environment(AudioPlayer.self) private var audioPlayer
+    @Query private var allSongs: [Song]
 
     @State private var showingEditor = false
     @State private var showingImporter = false
     @State private var showingShareCard = false
     @State private var isDetecting = false
-    @State private var pendingMixName = ""
+    @State private var mixPendingDelete: Mix?
+    @State private var mixToEdit: Mix?
+    @State private var exportPrefixDraft = ""
+    @State private var prefixValidation: ExportPrefixValidation?
 
     var body: some View {
         List {
             headerSection
+            exportPrefixSection
             metadataSection
-            mixesSection
+            versionsSection
             if !song.notes.isEmpty {
                 Section("Notes") {
                     Text(song.notes)
@@ -31,9 +35,9 @@ struct SongDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Edit", systemImage: "pencil") { showingEditor = true }
-                    Button("Add Mix", systemImage: "waveform.badge.plus") { showingImporter = true }
+                    Button("Add Version", systemImage: "waveform.badge.plus") { showingImporter = true }
                     if ReleaseSurface.audioAnalysis {
-                        Button("Detect BPM & Key", systemImage: "wand.and.stars") { detectMetadata() }
+                        Button("Detect Audio Metadata", systemImage: "wand.and.stars") { detectMetadata() }
                             .disabled(song.primaryMix == nil || isDetecting)
                             .accessibilityIdentifier(A11yID.Song.detectMetadata)
                     }
@@ -53,8 +57,13 @@ struct SongDetailView: View {
         .sheet(isPresented: $showingEditor) {
             SongEditorView(song: song)
         }
-        .audioImporter(isPresented: $showingImporter) { fileName, duration in
-            addMix(fileName: fileName, duration: duration)
+        .sheet(isPresented: mixEditorPresented) {
+            if let mix = mixToEdit {
+                MixEditorView(mix: mix)
+            }
+        }
+        .audioImporter(isPresented: $showingImporter) { fileName, duration, sourceBasename in
+            addMix(fileName: fileName, duration: duration, sourceBasename: sourceBasename)
         }
         .sheet(isPresented: $showingShareCard) {
             ShareCardSheet(content: .song(song))
@@ -69,10 +78,79 @@ struct SongDetailView: View {
                     .padding(.bottom, 12)
             }
         }
+        .confirmationDialog(
+            "Delete version?",
+            isPresented: deleteMixPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let mix = mixPendingDelete { deleteMix(mix) }
+            }
+            Button("Cancel", role: .cancel) { mixPendingDelete = nil }
+        } message: {
+            if let mix = mixPendingDelete {
+                Text("Remove \"\(mix.displayName)\" and its audio file? This can't be undone.")
+            }
+        }
+        .onAppear {
+            exportPrefixDraft = song.exportPrefix
+        }
     }
 
-    /// Runs BPM/key detection on the song's primary mix and writes the results
-    /// back onto the song.
+    private var exportPrefixSection: some View {
+        Section {
+            HStack {
+                TextField("NightDrive_", text: $exportPrefixDraft)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier(A11yID.Song.exportPrefix)
+                    .onChange(of: exportPrefixDraft) { _, newValue in
+                        validatePrefix(newValue)
+                    }
+                if !exportPrefixDraft.isEmpty {
+                    Button("Copy", systemImage: "doc.on.doc") {
+                        UIPasteboard.general.string = exportPrefixDraft
+                    }
+                    .labelStyle(.iconOnly)
+                }
+            }
+            if let prefixValidation {
+                if let error = prefixValidation.error {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                } else if let warning = prefixValidation.warning {
+                    Text(warning).font(.caption).foregroundStyle(.orange)
+                }
+            }
+            Text(
+                "Name FL exports like \(exportPrefixDraft.isEmpty ? "YourBeat_" : exportPrefixDraft)"
+                + "master.mp3 and they stack here automatically."
+            )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Save Prefix") { saveExportPrefix() }
+                .disabled(!(prefixValidation?.isValid ?? true))
+        } header: {
+            Text("Export Naming")
+        }
+    }
+
+    private func validatePrefix(_ value: String) {
+        prefixValidation = ExportPrefixValidator.validate(
+            value,
+            excludingSongID: song.id,
+            existingSongs: allSongs
+        )
+    }
+
+    private func saveExportPrefix() {
+        let trimmed = exportPrefixDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        validatePrefix(trimmed)
+        guard prefixValidation?.isValid ?? true else { return }
+        song.exportPrefix = trimmed
+        song.exportPrefixIsManual = !trimmed.isEmpty
+        Haptics.success()
+    }
+
     private func detectMetadata() {
         guard let mix = song.primaryMix else { return }
         isDetecting = true
@@ -81,6 +159,7 @@ struct SongDetailView: View {
             let analysis = await AudioAnalyzer.analyze(url: url)
             if let bpm = analysis.bpm { song.bpm = bpm }
             if let key = analysis.key, key != .unknown { song.key = key }
+            song.applyDetectedVocals(analysis.vocal)
             isDetecting = false
         }
     }
@@ -98,6 +177,11 @@ struct SongDetailView: View {
                     }
                 HStack {
                     CategoryBadge(category: song.category)
+                    if song.mixes.count > 1 {
+                        Text("\(song.mixes.count) versions")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     StarRatingView(rating: $song.rating)
                 }
@@ -113,26 +197,37 @@ struct SongDetailView: View {
             LabeledContent("Genre", value: song.genre.isEmpty ? "—" : song.genre)
             LabeledContent("BPM", value: "\(song.bpm)")
             LabeledContent("Key", value: song.key.displayName)
+            LabeledContent("Vocals") {
+                VocalConfidenceMeter(
+                    presence: song.vocalPresence,
+                    confidence: song.vocalConfidence,
+                    isManual: song.vocalPresenceIsManual
+                )
+            }
         }
     }
 
-    private var mixesSection: some View {
+    private var versionsSection: some View {
         Section {
             if song.mixes.isEmpty {
                 Button {
                     showingImporter = true
                 } label: {
-                    Label("Import a Mix", systemImage: "waveform.badge.plus")
+                    Label("Import a Version", systemImage: "waveform.badge.plus")
                 }
             } else {
-                ForEach(song.mixes.sorted(by: { $0.dateAdded > $1.dateAdded })) { mix in
-                    MixRow(mix: mix, onTogglePrimary: { setPrimary(mix) })
+                ForEach(song.orderedMixes) { mix in
+                    VersionStackRow(
+                        mix: mix,
+                        onTogglePrimary: { setPrimary(mix) },
+                        onEdit: { mixToEdit = mix }
+                    )
                 }
-                .onDelete(perform: deleteMixes)
+                .onDelete(perform: requestDeleteMixes)
             }
         } header: {
             HStack {
-                Text("Mixes")
+                Text("Versions")
                 Spacer()
                 if !song.mixes.isEmpty {
                     Button {
@@ -140,9 +235,11 @@ struct SongDetailView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add version")
                 }
             }
         }
+        .accessibilityIdentifier(A11yID.Song.versionStack)
     }
 
     private var shareText: String {
@@ -150,20 +247,20 @@ struct SongDetailView: View {
         if !song.artist.isEmpty { parts.append("by \(song.artist)") }
         parts.append("\(song.bpm) BPM")
         if !song.genre.isEmpty { parts.append(song.genre) }
-        return parts.joined(separator: " · ") + "\n\nMade with ProducerBuddy"
+        return parts.joined(separator: " · ") + "\n\nMade with MixStack"
     }
 
-    private func addMix(fileName: String, duration: Double) {
-        let mixNumber = song.mixes.count + 1
-        let mix = Mix(
-            name: "Mix \(mixNumber)",
+    private func addMix(fileName: String, duration: Double, sourceBasename: String) {
+        let parsed = MixNamingParser.parse(basename: sourceBasename)
+        let audio = ImportedAudio(
             fileName: fileName,
             duration: duration,
-            isPrimary: song.mixes.isEmpty
+            title: nil,
+            artist: nil,
+            suggestedTitle: song.title,
+            sourceBasename: sourceBasename
         )
-        mix.song = song
-        modelContext.insert(mix)
-
+        let mix = SongImportService.attachMix(to: song, audio: audio, parsed: parsed, context: modelContext)
         let mixID = mix.persistentModelID
         let url = mix.fileURL
         Task { @MainActor in
@@ -174,44 +271,73 @@ struct SongDetailView: View {
     }
 
     private func setPrimary(_ mix: Mix) {
-        for m in song.mixes {
-            m.isPrimary = (m.id == mix.id)
+        for existing in song.mixes {
+            existing.isPrimary = (existing.id == mix.id)
+        }
+        Haptics.tap()
+    }
+
+    private func requestDeleteMixes(at offsets: IndexSet) {
+        let ordered = song.orderedMixes
+        if let index = offsets.first {
+            mixPendingDelete = ordered[index]
         }
     }
 
-    private func deleteMixes(at offsets: IndexSet) {
-        let sorted = song.mixes.sorted(by: { $0.dateAdded > $1.dateAdded })
-        for index in offsets {
-            let mix = sorted[index]
-            if audioPlayer.currentMix?.id == mix.id {
-                audioPlayer.stop()
-            }
-            AudioStorage.deleteFile(named: mix.fileName)
-            modelContext.delete(mix)
+    private func deleteMix(_ mix: Mix) {
+        if audioPlayer.currentMix?.id == mix.id {
+            audioPlayer.stop()
         }
+        AudioStorage.deleteFile(named: mix.fileName)
+        modelContext.delete(mix)
+        mixPendingDelete = nil
+    }
+
+    private var deleteMixPresented: Binding<Bool> {
+        Binding(
+            get: { mixPendingDelete != nil },
+            set: { if !$0 { mixPendingDelete = nil } }
+        )
+    }
+
+    private var mixEditorPresented: Binding<Bool> {
+        Binding(
+            get: { mixToEdit != nil },
+            set: { if !$0 { mixToEdit = nil } }
+        )
     }
 }
 
-/// One mix within a song's detail list, with play and primary controls.
-private struct MixRow: View {
+/// One row in the song's version stack.
+struct VersionStackRow: View {
     let mix: Mix
     let onTogglePrimary: () -> Void
+    let onEdit: () -> Void
     @Environment(AudioPlayer.self) private var audioPlayer
 
     var body: some View {
         HStack(spacing: 12) {
             Button {
+                Haptics.tap()
                 audioPlayer.play(mix)
             } label: {
                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.title)
-                    .foregroundStyle(.accent)
+                    .font(.title2)
+                    .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(mix.name)
-                    .font(.body.weight(.medium))
+                HStack(spacing: 6) {
+                    Text(mix.displayName)
+                        .font(.body.weight(.medium))
+                    Text(mix.role.displayName)
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(mix.role.tint.opacity(0.2), in: Capsule())
+                        .foregroundStyle(mix.role.tint)
+                }
                 Text(mix.formattedDuration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -227,18 +353,20 @@ private struct MixRow: View {
                     playedColor: .accentColor,
                     unplayedColor: Color(.systemGray4)
                 )
-                .frame(width: 90, height: 28)
+                .frame(width: 72, height: 24)
                 .allowsHitTesting(false)
             }
 
-            Button {
-                onTogglePrimary()
-            } label: {
+            Button(action: onTogglePrimary) {
                 Image(systemName: mix.isPrimary ? "star.fill" : "star")
                     .foregroundStyle(mix.isPrimary ? .yellow : .secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(mix.isPrimary ? "Primary version" : "Set as primary")
         }
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2, perform: onEdit)
+        .accessibilityHint("Double tap to edit")
     }
 
     private var isPlaying: Bool {
@@ -249,7 +377,6 @@ private struct MixRow: View {
         audioPlayer.currentMix?.id == mix.id
     }
 
-    /// Playback progress (0–1) for the mini waveform when this mix is loaded.
     private var playedFraction: Double {
         guard isCurrent, audioPlayer.duration > 0 else { return 0 }
         return audioPlayer.currentTime / audioPlayer.duration

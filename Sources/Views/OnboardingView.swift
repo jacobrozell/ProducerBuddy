@@ -22,26 +22,29 @@ struct OnboardingView: View {
         OnboardingPage(
             symbol: "music.note.house",
             tint: .pink,
-            title: "Welcome to ProducerBuddy",
+            title: "Welcome to MixStack",
             message: "Your home for the music you make — from first idea to finished release."
         ),
         OnboardingPage(
             symbol: "square.and.arrow.down",
             tint: .orange,
             title: "Build Your Library",
-            message: "Import tracks straight from your DAW. ProducerBuddy auto-detects BPM and key and draws a waveform for each one."
+            message: "Import tracks straight from your DAW. MixStack auto-detects BPM and key "
+                + "and draws a waveform for each one."
         ),
         OnboardingPage(
             symbol: "waveform.badge.plus",
             tint: .blue,
             title: "Find the Best Take",
-            message: "Keep every mix of a song, then A/B them in the player without losing your place to pick the winner."
+            message: "Keep every mix of a song, then A/B them in the player without losing your place "
+                + "to pick the winner."
         ),
         OnboardingPage(
             symbol: "square.stack.3d.up",
             tint: .purple,
             title: "Sequence Your Release",
-            message: "Drag tracks into order and let the app flag energy dips, abrupt tempo jumps, and key clashes — or suggest an order for you."
+            message: "Drag tracks into order and let the app flag energy dips, abrupt tempo jumps, "
+                + "and key clashes — or suggest an order for you."
         ),
         OnboardingPage(
             symbol: "photo",

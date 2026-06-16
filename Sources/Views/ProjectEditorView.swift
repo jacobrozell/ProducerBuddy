@@ -7,6 +7,7 @@ struct ProjectEditorView: View {
     @Environment(\.dismiss) private var dismiss
 
     let project: Project?
+    var onCreated: ((Project) -> Void)?
 
     @State private var title = ""
     @State private var subtitle = ""
@@ -65,6 +66,7 @@ struct ProjectEditorView: View {
         } else {
             let new = Project(title: trimmed, subtitle: subtitle, kind: kind, notes: notes)
             modelContext.insert(new)
+            onCreated?(new)
         }
         dismiss()
     }

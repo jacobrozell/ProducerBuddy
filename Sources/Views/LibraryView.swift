@@ -20,22 +20,69 @@ struct LibraryView: View {
     @State private var searchText = ""
     @State private var sort: LibrarySort = .dateAdded
     @State private var categoryFilter: SongCategory?
+    @State private var vocalFilter: VocalLibraryFilter = .all
+    @AppStorage("library.bpmMin") private var bpmMin = LibraryFilterLogic.bpmRangeLimit.lowerBound
+    @AppStorage("library.bpmMax") private var bpmMax = LibraryFilterLogic.bpmRangeLimit.upperBound
+    @State private var selectedKeys: Set<MusicalKey> = []
+    @State private var favoritesOnly = false
+    @State private var showingFilters = false
     @State private var showingNewSong = false
     @State private var showingImporter = false
-    /// Count of songs from the most recent import, surfaced as a brief banner.
-    @State private var lastImportCount = 0
+    @State private var lastImportMessage = ""
+    @State private var importProgress: (current: Int, total: Int)?
+    @State private var importTask: Task<Void, Never>?
+    @State private var importFailures: [String] = []
+    @State private var songPendingDelete: Song?
+    @State private var songForProject: Song?
+    @State private var pendingImportPlan: ImportPlan?
+    @State private var pendingImportFailures: [String] = []
 
     var body: some View {
         NavigationStack {
-            Group {
+            List {
+                if let progress = importProgress {
+                    Section {
+                        importProgressBanner(current: progress.current, total: progress.total)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    }
+                }
+
+                Section {
+                    LibraryCategoryFilterBar(
+                        categoryFilter: $categoryFilter,
+                        filtersAreActive: filtersAreActive,
+                        onShowFilters: { showingFilters = true }
+                    )
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                }
+
                 if filteredSongs.isEmpty {
-                    emptyState
+                    Section {
+                        emptyState
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
                 } else {
-                    list
+                    ForEach(listSections) { section in
+                        if section.title.isEmpty {
+                            ForEach(section.songs) { song in
+                                songRow(song)
+                            }
+                        } else {
+                            Section(section.title) {
+                                ForEach(section.songs) { song in
+                                    songRow(song)
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            .listStyle(.plain)
             .navigationTitle("Library")
-            .searchable(text: $searchText, prompt: "Search songs, artists, genres")
+            .searchable(text: $searchText, prompt: "Search songs, artists, genres, notes")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     sortMenu
@@ -57,33 +104,97 @@ struct LibraryView: View {
                     .accessibilityIdentifier(A11yID.Library.addMenu)
                 }
             }
-            .safeAreaInset(edge: .top) { categoryFilterBar }
             .sheet(isPresented: $showingNewSong) {
                 SongEditorView(song: nil)
             }
-            .songImporter(isPresented: $showingImporter) { results in
-                importSongs(results)
+            .sheet(isPresented: $showingFilters) {
+                LibraryFiltersSheet(
+                    bpmMin: $bpmMin,
+                    bpmMax: $bpmMax,
+                    selectedKeys: $selectedKeys,
+                    vocalFilter: $vocalFilter,
+                    favoritesOnly: $favoritesOnly
+                )
+            }
+            .sheet(isPresented: addToProjectPresented) {
+                if let song = songForProject {
+                    AddToProjectSheet(song: song)
+                }
+            }
+            .sheet(isPresented: importResolutionPresented) {
+                ImportResolutionSheet(
+                    plan: Binding(
+                        get: { pendingImportPlan ?? ImportPlan(items: []) },
+                        set: { pendingImportPlan = $0 }
+                    ),
+                    songs: songs,
+                    onConfirm: commitImportPlan
+                )
+            }
+            .songImporter(isPresented: $showingImporter, importTask: $importTask) { current, total in
+                importProgress = (current, total)
+            } onImport: { results, failures in
+                finishImport(results: results, failures: failures)
             }
             .overlay(alignment: .bottom) {
-                if lastImportCount > 0 {
-                    importBanner
+                if !lastImportMessage.isEmpty {
+                    importSuccessBanner
                 }
+            }
+            .confirmationDialog(
+                deleteDialogTitle,
+                isPresented: deleteDialogPresented,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let song = songPendingDelete { deleteSong(song) }
+                }
+                Button("Cancel", role: .cancel) { songPendingDelete = nil }
+            } message: {
+                if let song = songPendingDelete {
+                    Text(deleteDialogMessage(for: song))
+                }
+            }
+            .alert("Import Failed", isPresented: importFailureAlertPresented) {
+                Button("OK") { importFailures = [] }
+            } message: {
+                Text(importFailureMessage)
             }
         }
     }
 
-    private var list: some View {
-        List {
-            ForEach(filteredSongs) { song in
-                NavigationLink {
-                    SongDetailView(song: song)
-                } label: {
-                    SongRow(song: song)
-                }
-            }
-            .onDelete(perform: deleteSongs)
+    @ViewBuilder
+    private func songRow(_ song: Song) -> some View {
+        NavigationLink {
+            SongDetailView(song: song)
+        } label: {
+            SongRow(song: song)
         }
-        .listStyle(.plain)
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                toggleFavorite(song)
+            } label: {
+                Label(
+                    song.isFavorite ? "Unfavorite" : "Favorite",
+                    systemImage: song.isFavorite ? "star.slash" : "star.fill"
+                )
+            }
+            .tint(.yellow)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                songForProject = song
+            } label: {
+                Label("Add to Project", systemImage: "plus.square.on.square")
+            }
+            .tint(.accentColor)
+
+            Button(role: .destructive) {
+                songPendingDelete = song
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     private var sortMenu: some View {
@@ -96,44 +207,53 @@ struct LibraryView: View {
         } label: {
             Image(systemName: "arrow.up.arrow.down")
         }
+        .accessibilityIdentifier(A11yID.Library.sortMenu)
     }
 
-    private var categoryFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                FilterChip(title: "All", isOn: categoryFilter == nil) {
-                    categoryFilter = nil
-                }
-                ForEach(SongCategory.allCases) { category in
-                    FilterChip(title: category.displayName, isOn: categoryFilter == category) {
-                        categoryFilter = (categoryFilter == category) ? nil : category
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-        }
-        .background(.bar)
+    private var filtersAreActive: Bool {
+        LibraryFilterLogic.isBPMFilterActive(min: bpmMin, max: bpmMax)
+            || !selectedKeys.isEmpty
+            || vocalFilter != .all
+            || favoritesOnly
     }
 
     private var emptyState: some View {
         ContentUnavailableView {
             Label("No Songs Yet", systemImage: "music.note")
         } description: {
-            Text("Import audio straight from your DAW or Files, and start building your catalog.")
+            if songs.isEmpty {
+                Text("Import audio straight from your DAW or Files, and start building your catalog.")
+            } else {
+                Text("No songs match your filters. Try adjusting filters or search.")
+            }
         } actions: {
-            Button("Import Audio") { showingImporter = true }
-                .buttonStyle(.borderedProminent)
-            Button("Add Manually") { showingNewSong = true }
+            if songs.isEmpty {
+                Button("Import Audio") { showingImporter = true }
+                    .buttonStyle(.borderedProminent)
+                Button("Add Manually") { showingNewSong = true }
+            } else {
+                Button("Clear Filters") { resetFilters() }
+            }
         }
     }
 
-    /// Transient confirmation shown after an import; clears itself after a beat.
-    private var importBanner: some View {
-        Label(
-            "Imported \(lastImportCount) song\(lastImportCount == 1 ? "" : "s")",
-            systemImage: "checkmark.circle.fill"
-        )
+    private func importProgressBanner(current: Int, total: Int) -> some View {
+        HStack(spacing: 10) {
+            ProgressView()
+            Text("Importing \(current) of \(total)…")
+                .font(.subheadline)
+            Spacer()
+            Button("Cancel", role: .cancel) { cancelImport() }
+                .font(.subheadline)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.bar)
+        .accessibilityIdentifier(A11yID.Library.importProgress)
+    }
+
+    private var importSuccessBanner: some View {
+        Label(lastImportMessage, systemImage: "checkmark.circle.fill")
         .font(.subheadline.weight(.semibold))
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -141,67 +261,24 @@ struct LibraryView: View {
         .foregroundStyle(.green)
         .padding(.bottom, 12)
         .transition(.move(edge: .bottom).combined(with: .opacity))
-        .task(id: lastImportCount) {
+        .task(id: lastImportMessage) {
             try? await Task.sleep(for: .seconds(2))
-            withAnimation { lastImportCount = 0 }
+            withAnimation { lastImportMessage = "" }
         }
     }
 
-    /// Creates one song (with a primary mix) per imported file, pre-filling the
-    /// title/artist from embedded tags or the filename, then kicks off automatic
-    /// BPM/key detection in the background.
-    private func importSongs(_ results: [ImportedAudio]) {
-        for audio in results {
-            let song = Song(title: audio.suggestedTitle, artist: audio.artist ?? "")
-            modelContext.insert(song)
-
-            let mix = Mix(
-                name: "Original",
-                fileName: audio.fileName,
-                duration: audio.duration,
-                isPrimary: true
-            )
-            mix.song = song
-            modelContext.insert(mix)
-
-            detectMetadata(for: song.persistentModelID, fileURL: mix.fileURL)
-            generateWaveform(for: mix.persistentModelID, fileURL: mix.fileURL)
-        }
-        withAnimation { lastImportCount = results.count }
+    private var listSections: [LibraryFilterLogic.Section] {
+        LibraryFilterLogic.sections(for: filteredSongs, sort: sort)
     }
 
-    /// Generates and caches a mix's waveform in the background.
-    private func generateWaveform(for mixID: PersistentIdentifier, fileURL: URL) {
-        Task { @MainActor in
-            let peaks = await WaveformGenerator.generate(url: fileURL)
-            guard !peaks.isEmpty, let mix = modelContext.model(for: mixID) as? Mix else { return }
-            mix.waveform = peaks
-        }
-    }
-
-    /// Analyses the audio off the main actor and writes the detected BPM/key back
-    /// onto the song once finished. The song is re-fetched by id to avoid passing
-    /// a non-Sendable model across the task boundary.
-    private func detectMetadata(for songID: PersistentIdentifier, fileURL: URL) {
-        Task { @MainActor in
-            let analysis = await AudioAnalyzer.analyze(url: fileURL)
-            guard let song = modelContext.model(for: songID) as? Song else { return }
-            if let bpm = analysis.bpm { song.bpm = bpm }
-            if let key = analysis.key, key != .unknown { song.key = key }
-        }
-    }
-
-    /// Search + category filter, then sort.
     private var filteredSongs: [Song] {
         songs
             .filter { categoryFilter == nil || $0.category == categoryFilter }
-            .filter { song in
-                guard !searchText.isEmpty else { return true }
-                let q = searchText.lowercased()
-                return song.title.lowercased().contains(q)
-                    || song.artist.lowercased().contains(q)
-                    || song.genre.lowercased().contains(q)
-            }
+            .filter { $0.matches(vocalFilter: vocalFilter) }
+            .filter { LibraryFilterLogic.matchesBPMRange(song: $0, min: bpmMin, max: bpmMax) }
+            .filter { LibraryFilterLogic.matchesKeyFilter(song: $0, selectedKeys: selectedKeys) }
+            .filter { LibraryFilterLogic.matchesFavoritesOnly(song: $0, favoritesOnly: favoritesOnly) }
+            .filter { LibraryFilterLogic.matchesSearch(song: $0, query: searchText) }
             .sorted(by: sortComparator)
     }
 
@@ -214,32 +291,117 @@ struct LibraryView: View {
         }
     }
 
-    private func deleteSongs(at offsets: IndexSet) {
-        for index in offsets {
-            let song = filteredSongs[index]
-            for mix in song.mixes {
-                AudioStorage.deleteFile(named: mix.fileName)
-            }
-            modelContext.delete(song)
+    private func toggleFavorite(_ song: Song) {
+        song.isFavorite.toggle()
+        Haptics.tap()
+    }
+
+    private func deleteSong(_ song: Song) {
+        for mix in song.mixes {
+            AudioStorage.deleteFile(named: mix.fileName)
+        }
+        modelContext.delete(song)
+        songPendingDelete = nil
+    }
+
+    private var deleteDialogTitle: String {
+        guard let song = songPendingDelete else { return "Delete Song?" }
+        return "Delete \"\(song.title)\"?"
+    }
+
+    private var addToProjectPresented: Binding<Bool> {
+        Binding(
+            get: { songForProject != nil },
+            set: { if !$0 { songForProject = nil } }
+        )
+    }
+
+    private var deleteDialogPresented: Binding<Bool> {
+        Binding(
+            get: { songPendingDelete != nil },
+            set: { if !$0 { songPendingDelete = nil } }
+        )
+    }
+
+    private func deleteDialogMessage(for song: Song) -> String {
+        let mixCount = song.mixes.count
+        let mixWord = mixCount == 1 ? "mix" : "mixes"
+        return "This removes \(mixCount) \(mixWord) and audio files from this device. This can't be undone."
+    }
+
+    private func finishImport(results: [ImportedAudio], failures: [String]) {
+        importProgress = nil
+        importTask = nil
+        guard !results.isEmpty else {
+            importFailures = failures
+            return
+        }
+
+        let plan = ImportPlanner.plan(results, existing: songs)
+        if plan.needsReview {
+            pendingImportPlan = plan
+            pendingImportFailures = failures
+            return
+        }
+
+        applyImport(plan: plan, failures: failures)
+    }
+
+    private func commitImportPlan() {
+        guard let plan = pendingImportPlan else { return }
+        let failures = pendingImportFailures
+        pendingImportPlan = nil
+        pendingImportFailures = []
+        applyImport(plan: plan, failures: failures)
+    }
+
+    private func applyImport(plan: ImportPlan, failures: [String]) {
+        let outcome = SongImportService.execute(plan, into: modelContext)
+        var parts: [String] = []
+        if outcome.newSongs > 0 {
+            parts.append("\(outcome.newSongs) new song\(outcome.newSongs == 1 ? "" : "s")")
+        }
+        if outcome.addedVersions > 0 {
+            parts.append("\(outcome.addedVersions) new version\(outcome.addedVersions == 1 ? "" : "s")")
+        }
+        withAnimation { lastImportMessage = "Imported " + parts.joined(separator: ", ") }
+        Haptics.success()
+        if !failures.isEmpty {
+            importFailures = failures
         }
     }
-}
 
-/// Toggleable pill used in the category filter bar.
-private struct FilterChip: View {
-    let title: String
-    let isOn: Bool
-    let action: () -> Void
+    private var importResolutionPresented: Binding<Bool> {
+        Binding(
+            get: { pendingImportPlan != nil },
+            set: { if !$0 { pendingImportPlan = nil; pendingImportFailures = [] } }
+        )
+    }
 
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isOn ? Color.accentColor : Color(.secondarySystemBackground), in: Capsule())
-                .foregroundStyle(isOn ? .white : .primary)
+    private func cancelImport() {
+        importTask?.cancel()
+        importTask = nil
+        importProgress = nil
+    }
+
+    private var importFailureAlertPresented: Binding<Bool> {
+        Binding(get: { !importFailures.isEmpty }, set: { if !$0 { importFailures = [] } })
+    }
+
+    private var importFailureMessage: String {
+        if importFailures.count == 1 {
+            return "Could not import \"\(importFailures[0])\"."
         }
-        .buttonStyle(.plain)
+        return "Could not import \(importFailures.count) files: \(importFailures.joined(separator: ", "))."
+    }
+
+    private func resetFilters() {
+        bpmMin = LibraryFilterLogic.bpmRangeLimit.lowerBound
+        bpmMax = LibraryFilterLogic.bpmRangeLimit.upperBound
+        selectedKeys.removeAll()
+        vocalFilter = .all
+        favoritesOnly = false
+        categoryFilter = nil
+        searchText = ""
     }
 }

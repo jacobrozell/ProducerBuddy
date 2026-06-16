@@ -6,7 +6,7 @@ import Foundation
 /// simply hidden in the UI.
 enum AppLinks {
     /// Base GitHub Pages site for this repo; legal pages are served from `/docs`.
-    private static let site = "https://jacobrozell.github.io/producerbuddy"
+    private static let site = "https://jacobrozell.github.io/mixstack"
 
     static let privacy = URL(string: "\(site)/privacy.html")!
     static let support = URL(string: "\(site)/support.html")!

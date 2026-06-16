@@ -7,6 +7,7 @@ struct ProjectListView: View {
     @Query(sort: \Project.dateCreated, order: .reverse) private var projects: [Project]
 
     @State private var showingNewProject = false
+    @State private var projectPendingDelete: Project?
 
     var body: some View {
         NavigationStack {
@@ -30,6 +31,20 @@ struct ProjectListView: View {
             .sheet(isPresented: $showingNewProject) {
                 ProjectEditorView(project: nil)
             }
+            .confirmationDialog(
+                deleteDialogTitle,
+                isPresented: deleteDialogPresented,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let project = projectPendingDelete { deleteProject(project) }
+                }
+                Button("Cancel", role: .cancel) { projectPendingDelete = nil }
+            } message: {
+                if let project = projectPendingDelete {
+                    Text("Songs stay in your library; only \"\(project.title)\" and its running order are removed.")
+                }
+            }
         }
     }
 
@@ -41,8 +56,14 @@ struct ProjectListView: View {
                 } label: {
                     ProjectRow(project: project)
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        projectPendingDelete = project
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
-            .onDelete(perform: deleteProjects)
         }
         .listStyle(.plain)
     }
@@ -58,10 +79,21 @@ struct ProjectListView: View {
         }
     }
 
-    private func deleteProjects(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(projects[index])
-        }
+    private func deleteProject(_ project: Project) {
+        modelContext.delete(project)
+        projectPendingDelete = nil
+    }
+
+    private var deleteDialogTitle: String {
+        guard let project = projectPendingDelete else { return "Delete Project?" }
+        return "Delete \"\(project.title)\"?"
+    }
+
+    private var deleteDialogPresented: Binding<Bool> {
+        Binding(
+            get: { projectPendingDelete != nil },
+            set: { if !$0 { projectPendingDelete = nil } }
+        )
     }
 }
 
