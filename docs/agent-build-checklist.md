@@ -25,7 +25,7 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 | 12 | Test matrix & CI | 🟡 | Unit tests (Swift Testing) + GitHub Actions lint/build/test + secret scan ✅ (**unverified — never run**). UI test targets, nightly matrix ⛔. |
 | 13 | Release surface / lean ship | 🟡 | `ReleaseSurface` gate + `-enable_full_product_surface` ✅. Branch model, lean v1 plan, QA matrix ⛔. |
 | 14 | Telemetry/deep links/extensions | ⚪ | None by design (no analytics). Deferred. |
-| 15 | Legal pages & store URLs | 🟡 | `docs/*.html` (privacy/support/accessibility/index) + `AppLinks` ✅. GitHub Pages enablement + store metadata ⛔. |
+| 15 | Legal pages & store URLs | 🟡 | `docs/*.html` + `AppLinks` ✅. Pages deploy workflow added (`pages.yml`, self-enables on default branch) 🧪. App Store metadata/screenshots ⛔. |
 | 16 | Release QA & ship | ⛔ | Owner decisions open; no device matrix / RC sign-off. |
 | 17 | Expand surface (post-v1) | ⚪ | Pre-v1. |
 | 18 | Doc hygiene | 🟡 | README/ROADMAP/specs/inventory maintained. Drift script ⛔. |
@@ -38,8 +38,8 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 3. **Manual accessibility audit (11)** — VoiceOver pass on the 5 core screens;
    fill the screen tracker in `specs/Accessibility.md`.
 4. **Repository layer (4)** — introduce `any …Repository` to isolate SwiftData.
-5. **GitHub Pages enablement (15)** — turn on Pages from `/docs` so the legal
-   URLs in `AppLinks` resolve.
+5. **App Store metadata + screenshots (15)** — honest subtitle/keywords and
+   marketing shots once the build runs on a device.
 
 ## Progress log
 
@@ -55,3 +55,4 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 | 2026-06-16 | Waveforms (cache + Canvas + scrubber) | |
 | 2026-06-16 | Phase 0/1/2/8/11/13/15 scaffolding: infra, specs, legal pages, Settings, a11y pass | |
 | 2026-06-16 | Phase 5: first-run onboarding (replayable from Settings) | |
+| 2026-06-16 | Phase 15: GitHub Pages deploy workflow (docs/ site) | |
