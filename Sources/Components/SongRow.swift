@@ -49,13 +49,20 @@ struct SongRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
+                if song.hasConfidentVocalLabel {
+                    VocalPresenceBadge(presence: song.vocalPresence)
+                }
                 if song.rating > 0 {
                     StarRatingView(rating: .constant(song.rating), isEditable: false)
                 }
                 if song.mixes.count > 1 {
-                    Text("\(song.mixes.count) mixes")
+                    Text("\(song.mixes.count) versions")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                } else if let mix = song.primaryMix, mix.role != .original {
+                    Text(mix.role.displayName)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(mix.role.tint)
                 }
             }
         }

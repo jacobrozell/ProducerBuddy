@@ -31,7 +31,8 @@ struct ShareCardView: View {
 
     var body: some View {
         ZStack {
-            tint.gradient
+            Rectangle()
+                .fill(tint.gradient)
             VStack(alignment: .leading, spacing: 0) {
                 header
                 Spacer(minLength: 12)
@@ -125,7 +126,7 @@ struct ShareCardView: View {
 
     private var footer: some View {
         HStack {
-            Text("Made with ProducerBuddy")
+            Text("Made with MixStack")
                 .font(.caption2.weight(.semibold))
                 .opacity(0.8)
             Spacer()
@@ -145,7 +146,7 @@ struct ShareCardView: View {
     private var kicker: String {
         switch content {
         case .song: return "New Music"
-        case .project(let p): return p.kind.displayName
+        case .project(let project): return project.kind.displayName
         }
     }
 

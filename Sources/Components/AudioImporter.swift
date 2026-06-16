@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// filename plus its measured duration.
 struct AudioImporter: ViewModifier {
     @Binding var isPresented: Bool
-    let onImport: (_ fileName: String, _ duration: Double) -> Void
+    let onImport: (_ fileName: String, _ duration: Double, _ sourceBasename: String) -> Void
 
     func body(content: Content) -> some View {
         content.fileImporter(
@@ -15,11 +15,12 @@ struct AudioImporter: ViewModifier {
             allowsMultipleSelection: false
         ) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
+            let sourceBasename = url.deletingPathExtension().lastPathComponent
             do {
                 let fileName = try AudioStorage.importFile(from: url)
                 Task {
                     let duration = await AudioStorage.duration(of: fileName)
-                    await MainActor.run { onImport(fileName, duration) }
+                    await MainActor.run { onImport(fileName, duration, sourceBasename) }
                 }
             } catch {
                 // Import failures are silently ignored; the user can retry.
@@ -33,7 +34,9 @@ struct AudioImporter: ViewModifier {
 /// together once all imports finish.
 struct SongImporter: ViewModifier {
     @Binding var isPresented: Bool
-    let onImport: (_ results: [ImportedAudio]) -> Void
+    @Binding var importTask: Task<Void, Never>?
+    var onProgress: ((_ current: Int, _ total: Int) -> Void)?
+    let onImport: (_ results: [ImportedAudio], _ failures: [String]) -> Void
 
     func body(content: Content) -> some View {
         content.fileImporter(
@@ -42,14 +45,23 @@ struct SongImporter: ViewModifier {
             allowsMultipleSelection: true
         ) { result in
             guard case let .success(urls) = result, !urls.isEmpty else { return }
-            Task {
+            importTask?.cancel()
+            importTask = Task { @MainActor in
                 var imported: [ImportedAudio] = []
-                for url in urls {
-                    if let audio = try? await AudioStorage.importAudio(from: url) {
+                var failures: [String] = []
+                let total = urls.count
+                for (index, url) in urls.enumerated() {
+                    if Task.isCancelled { return }
+                    onProgress?(index + 1, total)
+                    do {
+                        let audio = try await AudioStorage.importAudio(from: url)
                         imported.append(audio)
+                    } catch {
+                        failures.append(url.lastPathComponent)
                     }
                 }
-                await MainActor.run { onImport(imported) }
+                guard !Task.isCancelled else { return }
+                onImport(imported, failures)
             }
         }
     }
@@ -60,7 +72,7 @@ extension View {
     /// filename and duration.
     func audioImporter(
         isPresented: Binding<Bool>,
-        onImport: @escaping (_ fileName: String, _ duration: Double) -> Void
+        onImport: @escaping (_ fileName: String, _ duration: Double, _ sourceBasename: String) -> Void
     ) -> some View {
         modifier(AudioImporter(isPresented: isPresented, onImport: onImport))
     }
@@ -69,8 +81,15 @@ extension View {
     /// with embedded metadata and a suggested title already resolved.
     func songImporter(
         isPresented: Binding<Bool>,
-        onImport: @escaping (_ results: [ImportedAudio]) -> Void
+        importTask: Binding<Task<Void, Never>?>,
+        onProgress: ((_ current: Int, _ total: Int) -> Void)? = nil,
+        onImport: @escaping (_ results: [ImportedAudio], _ failures: [String]) -> Void
     ) -> some View {
-        modifier(SongImporter(isPresented: isPresented, onImport: onImport))
+        modifier(SongImporter(
+            isPresented: isPresented,
+            importTask: importTask,
+            onProgress: onProgress,
+            onImport: onImport
+        ))
     }
 }

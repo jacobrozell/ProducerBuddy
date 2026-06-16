@@ -8,7 +8,7 @@ struct WaveformView: View {
     var progress: Double = 0
     var playedColor: Color = .accentColor
     var unplayedColor: Color = Color(.systemGray3)
-    var onSeek: ((Double) -> Void)? = nil
+    var onSeek: ((Double) -> Void)?
 
     var body: some View {
         GeometryReader { geo in

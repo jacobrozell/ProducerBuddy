@@ -43,7 +43,7 @@ struct EnergyCurveChart: View {
                     y: .value("BPM", point.bpm)
                 )
                 .interpolationMethod(.monotone)
-                .foregroundStyle(.accent)
+                .foregroundStyle(Color.accentColor)
                 .lineStyle(StrokeStyle(lineWidth: 2.5))
 
                 PointMark(

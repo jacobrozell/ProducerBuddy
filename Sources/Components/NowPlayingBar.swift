@@ -13,7 +13,7 @@ struct NowPlayingBar: View {
 
             HStack(spacing: 12) {
                 Image(systemName: "waveform")
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
@@ -77,9 +77,9 @@ struct NowPlayingBar: View {
     }
 
     private var timeLabel: String {
-        func fmt(_ t: Double) -> String {
-            let s = Int(t.rounded())
-            return String(format: "%d:%02d", s / 60, s % 60)
+        func fmt(_ time: Double) -> String {
+            let totalSeconds = Int(time.rounded())
+            return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
         }
         return "\(fmt(audioPlayer.currentTime)) / \(fmt(audioPlayer.duration))"
     }
