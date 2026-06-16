@@ -44,8 +44,12 @@ identifier_name:
   min_length: 2
   excluded: [id, a, b, x, y, t, i, j, n, ch, s0, s1, s2]
 
+type_name:
+  min_length: 2
+  excluded: [DS]
+
 inclusive_language:
-  additional_allowed_terms:
+  additional_terms:
     - master
     - mastered
     - masterVersion

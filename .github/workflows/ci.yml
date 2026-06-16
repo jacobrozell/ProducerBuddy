@@ -9,6 +9,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI_XCODE_PROJECT: MixStack.xcodeproj
+  CI_XCODE_SCHEME: MixStack
+  SIM_DESTINATION: platform=iOS Simulator,name=iPhone 17
+
 jobs:
   lint:
     name: SwiftLint
@@ -20,8 +25,8 @@ jobs:
       - name: Lint
         run: swiftlint --strict
 
-  build-test:
-    name: Build & Test
+  build:
+    name: Build for Testing
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -35,13 +40,62 @@ jobs:
       - name: Generate project
         run: xcodegen generate
 
-      - name: Build and test
+      - name: Build for testing
         run: |
-          xcodebuild test \
-            -scheme MixStack \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -resultBundlePath TestResults \
+          xcodebuild build-for-testing \
+            -project "$CI_XCODE_PROJECT" \
+            -scheme "$CI_XCODE_SCHEME" \
+            -destination "$SIM_DESTINATION" \
+            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test products
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-products
+          path: DerivedData
+
+  test:
+    name: Unit Tests
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Download test products
+        uses: actions/download-artifact@v4
+        with:
+          name: test-products
+          path: DerivedData
+
+      - name: Run tests
+        run: bash Scripts/ci/run-tests.sh "$SIM_DESTINATION"
+
+      - name: Coverage summary
+        run: bash Scripts/ci/coverage-summary.sh
+
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-summary
+          path: coverage-summary.txt
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults.xcresult
 
       - name: Check for committed secrets
         run: bash Scripts/check-secrets.sh
