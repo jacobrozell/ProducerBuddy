@@ -79,10 +79,10 @@ The original spec stressed sharing music "in a clean, consistent, and visual
 way" and exporting "directly to social media." Today sharing is plain text —
 this is the biggest gap between the build and the vision.
 
-- **Generated release cards.** Use `ImageRenderer` to turn a song or project
-  into a polished, on-brand image card (artwork, title, BPM/key, tracklist) sized
-  for Instagram stories/posts and square feeds. This is the visual, consistent
-  share the brief wanted.
+- ✅ **Generated release cards.** *(Shipped.)* `ImageRenderer` turns a song or
+  project into a polished, on-brand image card (title, BPM/key, tracklist) in
+  square or story format, shared as a PNG. This is the visual, consistent share
+  the brief wanted. *Next:* an editable artwork slot instead of the gradient.
 - **Brand kit.** Let the user set an accent color, logo, and font once; every
   card inherits it so their releases look consistent across posts.
 - **Audiogram export.** Render a short video clip (waveform animating over a
@@ -137,9 +137,9 @@ Heavier lifts that move the app toward a real production companion.
 
 The things that make people keep their catalog in the app long-term.
 
-- **Background audio + lock-screen controls.** Wire up `MPNowPlayingInfoCenter`
-  and `MPRemoteCommandCenter` and set the audio session to keep playing when
-  backgrounded — currently playback is foreground-only.
+- ✅ **Background audio + lock-screen controls.** *(Shipped.)*
+  `MPNowPlayingInfoCenter` + `MPRemoteCommandCenter` are wired up and the `audio`
+  background mode keeps playback running when backgrounded.
 - **Queue & project playback.** Play a whole project in running order with
   auto-advance, instead of one mix at a time.
 - **iCloud sync & backup.** Move the SwiftData store to CloudKit so a catalog
@@ -167,9 +167,15 @@ A rough order that delivers visible value early and builds toward the vision:
    skip, a loop toggle, and a segmented A/B control that swaps mixes without
    losing position. *(Still open: looping a chosen section rather than the whole
    track.)*
-3. **Visual release cards (`ImageRenderer`)** — closes the brief's headline gap.
+3. ~~**Visual release cards (`ImageRenderer`)**~~ — ✅ shipped. Song and project
+   detail screens have a "Share Card" action that renders a polished, on-brand
+   image (square or story format) to a PNG and shares it via the system sheet.
+   *(Still open: brand kit, audiograms, banner preset, pre-save page.)*
 4. **Energy curve graph + badge explanations** — makes sequencing legible.
-5. **Background audio + project playback** — makes it a real listening app.
+5. ~~**Background audio + lock-screen controls**~~ — ✅ shipped. Playback
+   continues in the background (audio background mode) and the lock screen /
+   Control Center show metadata with working play, pause, ±15s, and scrub.
+   *(Still open: a project play queue with auto-advance.)*
 6. **Harmonic mixing + arc templates** — deepens the differentiator.
 7. **iCloud sync** — makes it trustworthy for a real catalog.
 8. **Waveforms + auto BPM/key** — unlocks audiograms and reduces manual entry.

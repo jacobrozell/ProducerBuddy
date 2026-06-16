@@ -10,6 +10,7 @@ struct SongDetailView: View {
 
     @State private var showingEditor = false
     @State private var showingImporter = false
+    @State private var showingShareCard = false
     @State private var pendingMixName = ""
 
     var body: some View {
@@ -30,8 +31,9 @@ struct SongDetailView: View {
                 Menu {
                     Button("Edit", systemImage: "pencil") { showingEditor = true }
                     Button("Add Mix", systemImage: "waveform.badge.plus") { showingImporter = true }
+                    Button("Share Card", systemImage: "photo") { showingShareCard = true }
                     ShareLink(item: shareText) {
-                        Label("Share", systemImage: "square.and.arrow.up")
+                        Label("Share Text", systemImage: "square.and.arrow.up")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -43,6 +45,9 @@ struct SongDetailView: View {
         }
         .audioImporter(isPresented: $showingImporter) { fileName, duration in
             addMix(fileName: fileName, duration: duration)
+        }
+        .sheet(isPresented: $showingShareCard) {
+            ShareCardSheet(content: .song(song))
         }
     }
 

@@ -18,14 +18,17 @@ ProducerBuddy follows a producer's workflow from raw idea to release:
 - **Playback** — A persistent now-playing bar sits above the tab bar; tap it for
   a full-screen player with a draggable scrubber, ±15s skip, a loop toggle, and
   an **A/B mix compare** that swaps versions without losing your position.
+  Audio keeps playing in the background with full **lock-screen / Control Center
+  controls**.
 - **Projects (albums / EPs / singles / mixtapes)** — Group songs into a release
   and design the running order.
 - **Sequencing engine** — For each track the app reports an energy **Rise**,
   **Fall**, or **Steady** move relative to the previous track (using BPM as an
   energy proxy), and warns about abrupt BPM jumps. "Suggest Order" arranges the
   record to build energy and peak before the wind-down.
-- **Sharing** — Share a song's marketing blurb or a project's tracklist via the
-  system share sheet.
+- **Visual sharing** — Generate a clean, on-brand **release card** image (square
+  or story format) for any song or project via `ImageRenderer`, or share a text
+  blurb / tracklist — all through the system share sheet.
 
 ## Project layout
 

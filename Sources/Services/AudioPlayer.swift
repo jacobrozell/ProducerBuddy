@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import MediaPlayer
 import Observation
 
 /// A small observable wrapper around `AVAudioPlayer` that drives the app's
@@ -21,6 +22,8 @@ final class AudioPlayer: NSObject {
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
+    /// Ensures the lock-screen remote commands are only registered once.
+    private var remoteCommandsConfigured = false
 
     /// Loads and begins playing a mix. Re-tapping the same mix toggles pause.
     func play(_ mix: Mix) {
@@ -43,6 +46,8 @@ final class AudioPlayer: NSObject {
             player.play()
             isPlaying = true
             startTimer()
+            configureRemoteCommandsIfNeeded()
+            updateNowPlayingInfo()
         } catch {
             // Leaves the player in a stopped state; the UI reflects !isPlaying.
             currentMix = nil
@@ -58,12 +63,14 @@ final class AudioPlayer: NSObject {
             player.play()
             isPlaying = true
         }
+        updateNowPlayingInfo()
     }
 
     func seek(to time: Double) {
         guard let player else { return }
         player.currentTime = max(0, min(time, player.duration))
         currentTime = player.currentTime
+        updateNowPlayingInfo()
     }
 
     /// Jumps forward (positive) or backward (negative) by `seconds`, clamped to
@@ -92,6 +99,7 @@ final class AudioPlayer: NSObject {
         isPlaying = false
         currentTime = 0
         currentMix = nil
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
     private func startTimer() {
@@ -103,6 +111,86 @@ final class AudioPlayer: NSObject {
             }
         }
     }
+
+    // MARK: - Lock screen / Control Center
+
+    /// Registers handlers for the system transport controls (lock screen,
+    /// Control Center, headphones). Called once, the first time playback starts.
+    private func configureRemoteCommandsIfNeeded() {
+        guard !remoteCommandsConfigured else { return }
+        remoteCommandsConfigured = true
+
+        let center = MPRemoteCommandCenter.shared()
+
+        // Remote commands are delivered on the main thread, so it is safe to
+        // assume MainActor isolation to reach the player's @MainActor API.
+        center.playCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, !self.isPlaying else { return .commandFailed }
+                self.togglePlayPause()
+                return .success
+            }
+        }
+        center.pauseCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isPlaying else { return .commandFailed }
+                self.togglePlayPause()
+                return .success
+            }
+        }
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.togglePlayPause()
+                return .success
+            }
+        }
+
+        center.skipForwardCommand.preferredIntervals = [15]
+        center.skipForwardCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.skip(by: 15)
+                return .success
+            }
+        }
+        center.skipBackwardCommand.preferredIntervals = [15]
+        center.skipBackwardCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.skip(by: -15)
+                return .success
+            }
+        }
+
+        center.changePlaybackPositionCommand.addTarget { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self, let event = event as? MPChangePlaybackPositionCommandEvent
+                else { return .commandFailed }
+                self.seek(to: event.positionTime)
+                return .success
+            }
+        }
+    }
+
+    /// Pushes current track metadata and playback state to the Now Playing
+    /// info center so the lock screen and Control Center stay in sync.
+    private func updateNowPlayingInfo() {
+        guard let mix = currentMix else {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            return
+        }
+
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: mix.song?.title ?? "Unknown",
+            MPMediaItemPropertyPlaybackDuration: duration,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
+            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
+        ]
+        if let artist = mix.song?.artist, !artist.isEmpty {
+            info[MPMediaItemPropertyArtist] = artist
+        }
+        info[MPMediaItemPropertyAlbumTitle] = mix.name
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
 }
 
 extension AudioPlayer: AVAudioPlayerDelegate {
@@ -110,6 +198,7 @@ extension AudioPlayer: AVAudioPlayerDelegate {
         Task { @MainActor in
             self.isPlaying = false
             self.currentTime = 0
+            self.updateNowPlayingInfo()
         }
     }
 }

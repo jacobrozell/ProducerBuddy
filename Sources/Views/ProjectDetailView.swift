@@ -10,6 +10,7 @@ struct ProjectDetailView: View {
 
     @State private var showingEditor = false
     @State private var showingAddTracks = false
+    @State private var showingShareCard = false
 
     var body: some View {
         List {
@@ -25,6 +26,7 @@ struct ProjectDetailView: View {
                     Button("Suggest Order", systemImage: "wand.and.stars") { suggestOrder() }
                         .disabled(project.tracks.count < 3)
                     Button("Edit Project", systemImage: "pencil") { showingEditor = true }
+                    Button("Share Card", systemImage: "photo") { showingShareCard = true }
                     ShareLink(item: tracklistText) {
                         Label("Share Tracklist", systemImage: "square.and.arrow.up")
                     }
@@ -38,6 +40,9 @@ struct ProjectDetailView: View {
         }
         .sheet(isPresented: $showingAddTracks) {
             AddTracksView(project: project)
+        }
+        .sheet(isPresented: $showingShareCard) {
+            ShareCardSheet(content: .project(project))
         }
     }
 
