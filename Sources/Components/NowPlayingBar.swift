@@ -14,6 +14,7 @@ struct NowPlayingBar: View {
             HStack(spacing: 12) {
                 Image(systemName: "waveform")
                     .foregroundStyle(.accent)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(audioPlayer.currentMix?.song?.title ?? "Unknown")
@@ -30,14 +31,18 @@ struct NowPlayingBar: View {
                 Text(timeLabel)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
 
                 Button {
+                    Haptics.tap()
                     audioPlayer.togglePlayPause()
                 } label: {
                     Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(audioPlayer.isPlaying ? "Pause" : "Play")
+                .accessibilityIdentifier(A11yID.Player.playPause)
 
                 Button {
                     audioPlayer.stop()
@@ -47,10 +52,16 @@ struct NowPlayingBar: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Stop")
+                .accessibilityIdentifier(A11yID.Player.stop)
             }
             // Tapping the row (but not the buttons) expands the full player.
             .contentShape(Rectangle())
             .onTapGesture { showingFullPlayer = true }
+            .accessibilityIdentifier(A11yID.Player.bar)
+            // Keep the title/mix labels readable; expose expanding as an action
+            // so VoiceOver users aren't reliant on the tap gesture.
+            .accessibilityAction(named: "Open full player") { showingFullPlayer = true }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)

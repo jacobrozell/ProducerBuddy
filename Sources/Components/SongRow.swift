@@ -10,6 +10,7 @@ struct SongRow: View {
         HStack(spacing: 12) {
             Button {
                 if let mix = song.primaryMix {
+                    Haptics.tap()
                     audioPlayer.play(mix)
                 }
             } label: {
@@ -24,6 +25,8 @@ struct SongRow: View {
             .buttonStyle(.plain)
             .disabled(song.primaryMix == nil)
             .opacity(song.primaryMix == nil ? 0.5 : 1)
+            .accessibilityLabel(isThisPlaying ? "Pause \(song.title)" : "Play \(song.title)")
+            .accessibilityIdentifier(A11yID.Song.play)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(song.title)

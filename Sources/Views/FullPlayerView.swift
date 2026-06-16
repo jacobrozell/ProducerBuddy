@@ -84,6 +84,7 @@ struct FullPlayerView: View {
             }
             .shadow(radius: 12, y: 6)
             .padding(.horizontal, 12)
+            .accessibilityHidden(true)
     }
 
     private var titleBlock: some View {
@@ -141,6 +142,18 @@ struct FullPlayerView: View {
                     }
                 )
                 .frame(height: 64)
+                // Canvas isn't operable by VoiceOver, so expose it as an
+                // adjustable element that scrubs in 15s steps.
+                .accessibilityElement()
+                .accessibilityLabel("Playback position")
+                .accessibilityValue(format(scrubValue))
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: audioPlayer.skip(by: 15)
+                    case .decrement: audioPlayer.skip(by: -15)
+                    @unknown default: break
+                    }
+                }
             } else {
                 // Fallback until the waveform has been generated.
                 Slider(
@@ -178,26 +191,39 @@ struct FullPlayerView: View {
                     Image(systemName: "backward.fill")
                 }
                 .disabled(!audioPlayer.hasPrevious)
+                .accessibilityLabel("Previous track")
+                .accessibilityIdentifier(A11yID.Player.previous)
             } else {
                 Button { audioPlayer.skip(by: -15) } label: {
                     Image(systemName: "gobackward.15")
                 }
+                .accessibilityLabel("Back 15 seconds")
+                .accessibilityIdentifier(A11yID.Player.skipBackward)
             }
 
-            Button { audioPlayer.togglePlayPause() } label: {
+            Button {
+                Haptics.tap()
+                audioPlayer.togglePlayPause()
+            } label: {
                 Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 64))
             }
+            .accessibilityLabel(audioPlayer.isPlaying ? "Pause" : "Play")
+            .accessibilityIdentifier(A11yID.Player.playPause)
 
             if hasQueue {
                 Button { audioPlayer.playNext() } label: {
                     Image(systemName: "forward.fill")
                 }
                 .disabled(!audioPlayer.hasNext)
+                .accessibilityLabel("Next track")
+                .accessibilityIdentifier(A11yID.Player.next)
             } else {
                 Button { audioPlayer.skip(by: 15) } label: {
                     Image(systemName: "goforward.15")
                 }
+                .accessibilityLabel("Forward 15 seconds")
+                .accessibilityIdentifier(A11yID.Player.skipForward)
             }
         }
         .font(.title)

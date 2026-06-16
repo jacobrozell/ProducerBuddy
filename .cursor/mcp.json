@@ -1,0 +1,9 @@
+{
+  "// note": "Agent build tooling. XcodeBuildMCP drives build/test on macOS. Adjust the command if you install it differently (e.g. a pinned version or local path).",
+  "mcpServers": {
+    "XcodeBuildMCP": {
+      "command": "npx",
+      "args": ["-y", "xcodebuildmcp@latest"]
+    }
+  }
+}

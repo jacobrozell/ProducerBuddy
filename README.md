@@ -45,24 +45,37 @@ project.yml                     XcodeGen project definition (iOS 18 target + tes
 Sources/
   ProducerBuddyApp.swift        App entry point + SwiftData container
   Models/                       SwiftData @Model types + supporting enums
-  Services/                     SequencingEngine, AudioStorage, AudioPlayer
-  Views/                        Library and Projects screens
-  Components/                   Reusable view pieces (rows, badges, now-playing)
+  Services/                     SequencingEngine, AudioAnalyzer, WaveformGenerator, AudioPlayer
+  Views/                        Library, Projects, Player, Settings screens
+  Components/                   Reusable view pieces (rows, badges, waveform, now-playing)
+  Support/                      AppLinks, ReleaseSurface, Haptics, A11yID, AppAppearance
 Tests/                          Swift Testing suites
+docs/                           Feature inventory, build checklist, hosted legal pages
+specs/                          Architecture & accessibility system specs
 ```
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for architecture and conventions,
+[`docs/feature-inventory.md`](docs/feature-inventory.md) for what ships today, and
+[`docs/agent-build-checklist.md`](docs/agent-build-checklist.md) for 0→ship status.
 
 ## Building
 
 This repo ships the XcodeGen spec rather than a checked-in `.xcodeproj`:
 
 ```bash
-brew install xcodegen      # if you don't have it
-xcodegen generate          # creates ProducerBuddy.xcodeproj
+brew install xcodegen swiftlint   # if you don't have them
+xcodegen generate                 # creates ProducerBuddy.xcodeproj
 open ProducerBuddy.xcodeproj
+bash Scripts/install-hooks.sh     # optional: pre-commit secret scan
 ```
 
 Then build/run the **ProducerBuddy** scheme on an iOS 18 simulator. Run tests
-with ⌘U (the **ProducerBuddyTests** target uses Swift Testing).
+with ⌘U (the **ProducerBuddyTests** target uses Swift Testing), or from the CLI:
+
+```bash
+xcodebuild test -scheme ProducerBuddy \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
 
 ## Design notes
 

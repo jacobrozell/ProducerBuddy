@@ -45,12 +45,16 @@ struct LibraryView: View {
                         Button("Import Audio…", systemImage: "square.and.arrow.down") {
                             showingImporter = true
                         }
+                        .accessibilityIdentifier(A11yID.Library.importAudio)
                         Button("New Song", systemImage: "square.and.pencil") {
                             showingNewSong = true
                         }
+                        .accessibilityIdentifier(A11yID.Library.newSong)
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add")
+                    .accessibilityIdentifier(A11yID.Library.addMenu)
                 }
             }
             .safeAreaInset(edge: .top) { categoryFilterBar }

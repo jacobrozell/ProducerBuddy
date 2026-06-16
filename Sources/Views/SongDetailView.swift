@@ -32,15 +32,22 @@ struct SongDetailView: View {
                 Menu {
                     Button("Edit", systemImage: "pencil") { showingEditor = true }
                     Button("Add Mix", systemImage: "waveform.badge.plus") { showingImporter = true }
-                    Button("Detect BPM & Key", systemImage: "wand.and.stars") { detectMetadata() }
-                        .disabled(song.primaryMix == nil || isDetecting)
-                    Button("Share Card", systemImage: "photo") { showingShareCard = true }
+                    if ReleaseSurface.audioAnalysis {
+                        Button("Detect BPM & Key", systemImage: "wand.and.stars") { detectMetadata() }
+                            .disabled(song.primaryMix == nil || isDetecting)
+                            .accessibilityIdentifier(A11yID.Song.detectMetadata)
+                    }
+                    if ReleaseSurface.shareCards {
+                        Button("Share Card", systemImage: "photo") { showingShareCard = true }
+                            .accessibilityIdentifier(A11yID.Song.shareCard)
+                    }
                     ShareLink(item: shareText) {
                         Label("Share Text", systemImage: "square.and.arrow.up")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("More")
             }
         }
         .sheet(isPresented: $showingEditor) {

@@ -29,6 +29,8 @@ struct ProjectDetailView: View {
                     Image(systemName: "play.fill")
                 }
                 .disabled(playableMixes.isEmpty)
+                .accessibilityLabel("Play project in order")
+                .accessibilityIdentifier(A11yID.Project.play)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -37,14 +39,19 @@ struct ProjectDetailView: View {
                     Button("Add Tracks", systemImage: "plus") { showingAddTracks = true }
                     Button("Suggest Order", systemImage: "wand.and.stars") { suggestOrder() }
                         .disabled(project.tracks.count < 3)
+                        .accessibilityIdentifier(A11yID.Project.suggestOrder)
                     Button("Edit Project", systemImage: "pencil") { showingEditor = true }
-                    Button("Share Card", systemImage: "photo") { showingShareCard = true }
+                    if ReleaseSurface.shareCards {
+                        Button("Share Card", systemImage: "photo") { showingShareCard = true }
+                    }
                     ShareLink(item: tracklistText) {
                         Label("Share Tracklist", systemImage: "square.and.arrow.up")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("More")
+                .accessibilityIdentifier(A11yID.Project.menu)
             }
         }
         .sheet(isPresented: $showingEditor) {

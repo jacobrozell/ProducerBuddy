@@ -4,6 +4,8 @@ import SwiftUI
 /// bar whenever a mix is loaded.
 struct RootView: View {
     @Environment(AudioPlayer.self) private var audioPlayer
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("appearance") private var appearance: AppAppearance = .system
 
     var body: some View {
         TabView {
@@ -13,13 +15,21 @@ struct RootView: View {
             Tab("Projects", systemImage: "square.stack.3d.up") {
                 ProjectListView()
             }
+            if ReleaseSurface.settings {
+                Tab("Settings", systemImage: "gearshape") {
+                    SettingsView()
+                        .accessibilityIdentifier(A11yID.Settings.tab)
+                }
+            }
         }
         .safeAreaInset(edge: .bottom) {
             if audioPlayer.currentMix != nil {
                 NowPlayingBar()
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.snappy, value: audioPlayer.currentMix?.id)
+        // Respect Reduce Motion: skip the slide animation when requested.
+        .animation(reduceMotion ? nil : .snappy, value: audioPlayer.currentMix?.id)
+        .preferredColorScheme(appearance.colorScheme)
     }
 }
