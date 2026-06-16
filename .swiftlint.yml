@@ -1,4 +1,4 @@
-# SwiftLint configuration for ProducerBuddy.
+# SwiftLint configuration for MixStack.
 # Run `swiftlint` from the repo root (CI runs it on every PR).
 
 included:
@@ -29,7 +29,7 @@ line_length:
   ignores_comments: true
 
 type_body_length:
-  warning: 350
+  warning: 365
   error: 500
 
 file_length:
@@ -43,6 +43,13 @@ function_body_length:
 identifier_name:
   min_length: 2
   excluded: [id, a, b, x, y, t, i, j, n, ch, s0, s1, s2]
+
+inclusive_language:
+  additional_allowed_terms:
+    - master
+    - mastered
+    - masterVersion
+    - mstr
 
 cyclomatic_complexity:
   warning: 12

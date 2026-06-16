@@ -17,11 +17,10 @@ Small changes that make the current screens feel finished. Most are a few hours
 each and don't need new data models.
 
 ### Capture & import
-- **Import audio first, song second.** Today you must create a `Song`, open it,
-  then import a mix — three steps before you hear anything. Add an **"Import
-  Audio"** button on the Library that ingests one or more files and auto-creates
-  a song per file, pre-filling the title from the filename. Metadata can be
-  edited later. This matches how producers actually dump exports off a DAW.
+- ✅ **Import audio first, song second.** *(Shipped.)* See [LibraryAndImport](specs/shipped/LibraryAndImport.md).
+- **Version-aware import.** Re-exports of the same beat should attach as a new
+  **mix**, not a duplicate song — filename parsing, match scoring, resolution
+  sheet. **Spec:** [`specs/VersionStack.md`](specs/VersionStack.md).
 - **Read embedded metadata on import.** Pull title/artist/artwork from the
   file's ID3/MP4 tags (`AVAsset` `commonMetadata`) instead of leaving every
   field blank.
@@ -124,11 +123,15 @@ Heavier lifts that move the app toward a real production companion.
   player uses it as an interactive scrubber and mix rows show a mini waveform.
   Still a prerequisite for audiograms and section-loop A/B.
 - ✅ **Auto BPM & key detection.** *(Shipped.)* On import (and on demand via
-  "Detect BPM & Key"), `AudioAnalyzer` estimates tempo by autocorrelating an
+  "Detect Audio Metadata"), `AudioAnalyzer` estimates tempo by autocorrelating an
   onset-energy envelope and key via a Goertzel chromagram correlated against the
   Krumhansl–Schmuckler profiles — a lightweight estimate the user can correct,
-  computed off the main actor. *Next:* a confidence score and tightening
-  accuracy with a proper spectral-flux onset detector.
+  computed off the main actor. *Next:* tightening accuracy with a proper
+  spectral-flux onset detector.
+- ✅ **Vocal detection with confidence meter.** *(Shipped.)* Heuristic detector
+  in `AudioAnalyzer` tags mixes as instrumental or with vocals, surfaces a
+  confidence score on song detail, supports manual override, and filters the
+  library. See [`specs/VocalDetection.md`](specs/VocalDetection.md).
 - **Reference-loudness check.** Show integrated LUFS per mix so the user can
   spot a master that's too quiet/hot before release. (Analysis only — not a
   mastering engine.)
@@ -200,3 +203,24 @@ A rough order that delivers visible value early and builds toward the vision:
 
 Items in §1 (accessibility, swipe actions, delete confirmation, haptics) are
 small enough to fold into whichever release touches the relevant screen.
+
+---
+
+## 6. Future ideas (specced)
+
+Prioritized from a hobbyist FL Studio → streaming workflow. Each has a spec in
+[`specs/`](specs/README.md).
+
+| Priority | Feature | Spec | Why it matters |
+|----------|---------|------|----------------|
+| Now | Vocal detection + library filter | [VocalDetection](specs/VocalDetection.md) | Sort beats vs vocal demos without listening to every export |
+| Next | Library polish (filters, swipes, confirm) | [LibraryPolish](specs/LibraryPolish.md) | Daily friction — find 120–128 house tracks in two taps |
+| Next | Version stack (roles, smart import, compare) | [VersionStack](specs/VersionStack.md) | FL exports `_v2_master` land on the right song, not duplicate #4 |
+| Next | Release tracking (date, links, distributor) | [ReleaseTracking](specs/ReleaseTracking.md) | Close the loop after DistroKid/TuneCore upload |
+| Soon | Loudness (LUFS) per mix | [LoudnessAnalysis](specs/LoudnessAnalysis.md) | Catch crushed masters before streaming normalization |
+| Soon | Brand kit for share cards | [BrandKit](specs/BrandKit.md) | Consistent Instagram/Spotify promo look |
+| Soon | Audiogram video export | [AudiogramExport](specs/AudiogramExport.md) | The format that actually gets plays on Stories/TikTok |
+| Later | Sequencing (preview, arcs, transitions) | [SequencingEnhancements](specs/SequencingEnhancements.md) | EP/mixtape order you can trust and remember |
+| Later | Timeline markers (drop, hook) | [TimelineMarkers](specs/TimelineMarkers.md) | Navigate 3-minute beats; better loops and audiogram clips |
+| Later | Catalog export + iCloud sync | [CatalogSync](specs/CatalogSync.md) | Trust — catalog survives device upgrades |
+| Explore | Drop `.flp` for stem paths? | — | FL-specific import if format is tractable without a separation engine |

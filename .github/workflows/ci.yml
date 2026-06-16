@@ -38,7 +38,7 @@ jobs:
       - name: Build and test
         run: |
           xcodebuild test \
-            -scheme ProducerBuddy \
+            -scheme MixStack \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -resultBundlePath TestResults \
             CODE_SIGNING_ALLOWED=NO
