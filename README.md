@@ -59,3 +59,11 @@ with ⌘U (the **ProducerBuddyTests** target uses Swift Testing).
   referenced by relative filename, so records survive across launches.
 - This is a hobby-jam scope; stretch ideas from the brief (EQ/mastering, stem
   splitting, pitch/BPM editing, direct social posting) are left as future work.
+
+## Where it's headed
+
+See **[ROADMAP.md](ROADMAP.md)** for a user-centered look at UX polish and
+planned features — prioritized by impact, from quick wins (import-first flow,
+full-screen scrubbing player, A/B mix compare) to the brief's headline ask
+(generated visual release cards for social) and deeper bets (harmonic-mixing
+sequencer, energy-curve charts, background audio, iCloud sync).
