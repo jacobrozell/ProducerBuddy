@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 
+// swiftlint:disable inclusive_language
 /// The stage a song is at in the producer's workflow. Lets the user sort and
 /// filter their library by how "done" a track is.
 enum SongCategory: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -46,3 +47,4 @@ enum SongCategory: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 }
+// swiftlint:enable inclusive_language

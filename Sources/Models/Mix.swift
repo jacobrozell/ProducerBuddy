@@ -19,6 +19,10 @@ final class Mix {
     /// Cached, normalized (0–1) waveform peaks for quick drawing. Empty until
     /// generated; computed once at import and reused thereafter.
     var waveform: [Float]
+    var roleRaw: String = MixRole.original.rawValue
+    var sourceFileName: String?
+    var versionLabel: String?
+    var sortOrder: Int = 0
 
     var song: Song?
 
@@ -30,7 +34,11 @@ final class Mix {
         notes: String = "",
         isPrimary: Bool = false,
         dateAdded: Date = .now,
-        waveform: [Float] = []
+        waveform: [Float] = [],
+        role: MixRole = .original,
+        sourceFileName: String? = nil,
+        versionLabel: String? = nil,
+        sortOrder: Int = 0
     ) {
         self.id = id
         self.name = name
@@ -40,9 +48,35 @@ final class Mix {
         self.isPrimary = isPrimary
         self.dateAdded = dateAdded
         self.waveform = waveform
+        self.roleRaw = role.rawValue
+        self.sourceFileName = sourceFileName
+        self.versionLabel = versionLabel
+        self.sortOrder = sortOrder
+    }
+
+    var role: MixRole {
+        get { MixRole(rawValue: roleRaw) ?? .original }
+        set { roleRaw = newValue.rawValue }
     }
 
     var hasWaveform: Bool { !waveform.isEmpty }
+
+    /// User-facing label: custom name when set, otherwise role + version.
+    var displayName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, !isGenericName(trimmed) {
+            return trimmed
+        }
+        if let versionLabel, !versionLabel.isEmpty {
+            return "\(role.displayName) \(versionLabel)"
+        }
+        return role.displayName
+    }
+
+    private func isGenericName(_ value: String) -> Bool {
+        let lower = value.lowercased()
+        return lower == "original" || lower.hasPrefix("mix ")
+    }
 
     /// Resolved absolute URL of the audio file in the app's storage directory.
     var fileURL: URL {

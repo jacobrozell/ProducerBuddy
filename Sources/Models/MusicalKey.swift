@@ -48,8 +48,8 @@ enum MusicalKey: String, Codable, CaseIterable, Identifiable, Sendable {
 
     /// Short Camelot code (e.g. "8A", "11B"), or nil when unknown.
     var camelotCode: String? {
-        guard let c = camelot else { return nil }
-        return "\(c.number)\(c.isMajor ? "B" : "A")"
+        guard let code = camelot else { return nil }
+        return "\(code.number)\(code.isMajor ? "B" : "A")"
     }
 
     /// Builds a key from a chromatic pitch class (0 = C, 1 = C♯/D♭, … 11 = B)
