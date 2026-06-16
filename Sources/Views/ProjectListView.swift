@@ -7,6 +7,7 @@ struct ProjectListView: View {
     @Query(sort: \Project.dateCreated, order: .reverse) private var projects: [Project]
 
     @State private var showingNewProject = false
+    @State private var showingSettings = false
     @State private var projectPendingDelete: Project?
 
     var body: some View {
@@ -20,6 +21,17 @@ struct ProjectListView: View {
             }
             .navigationTitle("Projects")
             .toolbar {
+                if ReleaseSurface.settings {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showingSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                        .accessibilityLabel("Settings")
+                        .accessibilityIdentifier(A11yID.Settings.button)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingNewProject = true
@@ -27,6 +39,9 @@ struct ProjectListView: View {
                         Image(systemName: "plus")
                     }
                 }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .sheet(isPresented: $showingNewProject) {
                 ProjectEditorView(project: nil)

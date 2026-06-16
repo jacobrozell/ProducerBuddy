@@ -18,13 +18,8 @@ struct RootView: View {
             Tab("Projects", systemImage: "square.stack.3d.up") {
                 ProjectListView()
             }
-            if ReleaseSurface.settings {
-                Tab("Settings", systemImage: "gearshape") {
-                    SettingsView()
-                        .accessibilityIdentifier(A11yID.Settings.tab)
-                }
-            }
         }
+        .brandTabChrome()
         .safeAreaInset(edge: .bottom) {
             if audioPlayer.currentMix != nil {
                 NowPlayingBar()
@@ -38,6 +33,7 @@ struct RootView: View {
             OnboardingView { hasCompletedOnboarding = true }
         }
         .task {
+            AppLog.shared.info(.app, eventName: "main_tab_presented", message: "Root tab shell presented")
             // Defer one run loop so SwiftData and the tab hierarchy are ready.
             await Task.yield()
             await seedDemoTracksIfNeeded()

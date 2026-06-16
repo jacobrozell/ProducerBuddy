@@ -16,6 +16,7 @@ enum LibrarySort: String, CaseIterable, Identifiable {
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var songs: [Song]
+    @Query private var projects: [Project]
 
     @State private var searchText = ""
     @State private var sort: LibrarySort = .dateAdded
@@ -26,6 +27,7 @@ struct LibraryView: View {
     @State private var selectedKeys: Set<MusicalKey> = []
     @State private var favoritesOnly = false
     @State private var showingFilters = false
+    @State private var showingSettings = false
     @State private var showingNewSong = false
     @State private var showingImporter = false
     @State private var lastImportMessage = ""
@@ -42,8 +44,25 @@ struct LibraryView: View {
             List {
                 if let progress = importProgress {
                     Section {
-                        importProgressBanner(current: progress.current, total: progress.total)
+                        ImportProgressBannerView(
+                            current: progress.current,
+                            total: progress.total,
+                            onCancel: cancelImport
+                        )
                             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    }
+                }
+
+                if !songs.isEmpty {
+                    Section {
+                        LibraryStatsHeader(
+                            songCount: songs.count,
+                            mixCount: totalMixCount,
+                            projectCount: projects.count
+                        )
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
                 }
 
@@ -88,7 +107,17 @@ struct LibraryView: View {
                     sortMenu
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
+                    HStack(spacing: DS.Spacing.sm) {
+                        if ReleaseSurface.settings {
+                            Button {
+                                showingSettings = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                            }
+                            .accessibilityLabel("Settings")
+                            .accessibilityIdentifier(A11yID.Settings.button)
+                        }
+                        Menu {
                         Button("Import Audio…", systemImage: "square.and.arrow.down") {
                             showingImporter = true
                         }
@@ -102,7 +131,11 @@ struct LibraryView: View {
                     }
                     .accessibilityLabel("Add")
                     .accessibilityIdentifier(A11yID.Library.addMenu)
+                    }
                 }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .sheet(isPresented: $showingNewSong) {
                 SongEditorView(song: nil)
@@ -138,7 +171,9 @@ struct LibraryView: View {
             }
             .overlay(alignment: .bottom) {
                 if !lastImportMessage.isEmpty {
-                    importSuccessBanner
+                    ImportSuccessBannerView(message: lastImportMessage) {
+                        withAnimation { lastImportMessage = "" }
+                    }
                 }
             }
             .confirmationDialog(
@@ -158,7 +193,7 @@ struct LibraryView: View {
             .alert("Import Failed", isPresented: importFailureAlertPresented) {
                 Button("OK") { importFailures = [] }
             } message: {
-                Text(importFailureMessage)
+                Text(LibraryImportActions.importFailureMessage(importFailures))
             }
         }
     }
@@ -217,6 +252,10 @@ struct LibraryView: View {
             || favoritesOnly
     }
 
+    private var totalMixCount: Int {
+        songs.reduce(0) { $0 + $1.mixes.count }
+    }
+
     private var emptyState: some View {
         ContentUnavailableView {
             Label("No Songs Yet", systemImage: "music.note")
@@ -237,34 +276,43 @@ struct LibraryView: View {
         }
     }
 
-    private func importProgressBanner(current: Int, total: Int) -> some View {
-        HStack(spacing: 10) {
-            ProgressView()
-            Text("Importing \(current) of \(total)…")
-                .font(.subheadline)
-            Spacer()
-            Button("Cancel", role: .cancel) { cancelImport() }
-                .font(.subheadline)
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.bar)
-        .accessibilityIdentifier(A11yID.Library.importProgress)
+    private func finishImport(results: [ImportedAudio], failures: [String]) {
+        importProgress = nil
+        importTask = nil
+        LibraryImportActions.finishImport(ImportFinishRequest(
+            results: results,
+            failures: failures,
+            existingSongs: songs,
+            onNeedsReview: { plan, pendingFailures in
+                pendingImportPlan = plan
+                pendingImportFailures = pendingFailures
+            },
+            onComplete: { plan, pendingFailures in
+                applyImport(plan: plan, failures: pendingFailures)
+            },
+            onFailuresOnly: { importFailures = $0 }
+        ))
     }
 
-    private var importSuccessBanner: some View {
-        Label(lastImportMessage, systemImage: "checkmark.circle.fill")
-        .font(.subheadline.weight(.semibold))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.regularMaterial, in: Capsule())
-        .foregroundStyle(.green)
-        .padding(.bottom, 12)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .task(id: lastImportMessage) {
-            try? await Task.sleep(for: .seconds(2))
-            withAnimation { lastImportMessage = "" }
-        }
+    private func commitImportPlan() {
+        guard let plan = pendingImportPlan else { return }
+        let failures = pendingImportFailures
+        pendingImportPlan = nil
+        pendingImportFailures = []
+        applyImport(plan: plan, failures: failures)
+    }
+
+    private func applyImport(plan: ImportPlan, failures: [String]) {
+        LibraryImportActions.applyImport(
+            plan: plan,
+            failures: failures,
+            modelContext: modelContext,
+            onSuccess: { message in
+                withAnimation { lastImportMessage = message }
+                Haptics.success()
+            },
+            onPartialFailure: { importFailures = $0 }
+        )
     }
 
     private var listSections: [LibraryFilterLogic.Section] {
@@ -329,48 +377,6 @@ struct LibraryView: View {
         return "This removes \(mixCount) \(mixWord) and audio files from this device. This can't be undone."
     }
 
-    private func finishImport(results: [ImportedAudio], failures: [String]) {
-        importProgress = nil
-        importTask = nil
-        guard !results.isEmpty else {
-            importFailures = failures
-            return
-        }
-
-        let plan = ImportPlanner.plan(results, existing: songs)
-        if plan.needsReview {
-            pendingImportPlan = plan
-            pendingImportFailures = failures
-            return
-        }
-
-        applyImport(plan: plan, failures: failures)
-    }
-
-    private func commitImportPlan() {
-        guard let plan = pendingImportPlan else { return }
-        let failures = pendingImportFailures
-        pendingImportPlan = nil
-        pendingImportFailures = []
-        applyImport(plan: plan, failures: failures)
-    }
-
-    private func applyImport(plan: ImportPlan, failures: [String]) {
-        let outcome = SongImportService.execute(plan, into: modelContext)
-        var parts: [String] = []
-        if outcome.newSongs > 0 {
-            parts.append("\(outcome.newSongs) new song\(outcome.newSongs == 1 ? "" : "s")")
-        }
-        if outcome.addedVersions > 0 {
-            parts.append("\(outcome.addedVersions) new version\(outcome.addedVersions == 1 ? "" : "s")")
-        }
-        withAnimation { lastImportMessage = "Imported " + parts.joined(separator: ", ") }
-        Haptics.success()
-        if !failures.isEmpty {
-            importFailures = failures
-        }
-    }
-
     private var importResolutionPresented: Binding<Bool> {
         Binding(
             get: { pendingImportPlan != nil },
@@ -386,13 +392,6 @@ struct LibraryView: View {
 
     private var importFailureAlertPresented: Binding<Bool> {
         Binding(get: { !importFailures.isEmpty }, set: { if !$0 { importFailures = [] } })
-    }
-
-    private var importFailureMessage: String {
-        if importFailures.count == 1 {
-            return "Could not import \"\(importFailures[0])\"."
-        }
-        return "Could not import \(importFailures.count) files: \(importFailures.joined(separator: ", "))."
     }
 
     private func resetFilters() {

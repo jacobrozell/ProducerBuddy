@@ -38,6 +38,7 @@ enum A11yID {
         static let suggestOrder = "project.suggestOrder"
     }
     enum Settings {
+        static let button = "settings.button"
         static let tab = "settings.tab"
         static let deleteAllData = "settings.deleteAllData"
         static let loadDemoTracks = "settings.loadDemoTracks"

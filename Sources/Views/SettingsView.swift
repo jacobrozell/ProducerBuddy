@@ -4,6 +4,7 @@ import SwiftData
 /// App settings: appearance, feedback, external links, and data management.
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Environment(AudioPlayer.self) private var audioPlayer
 
     @AppStorage("appearance") private var appearance: AppAppearance = .system
@@ -31,7 +32,13 @@ struct SettingsView: View {
                 aboutSection
                 dataSection
             }
+            .brandFormChrome()
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
             .alert("Library Organized", isPresented: organizeResultPresented) {
                 Button("OK", role: .cancel) {}
             } message: {

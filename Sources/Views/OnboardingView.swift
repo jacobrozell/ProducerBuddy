@@ -21,34 +21,34 @@ struct OnboardingView: View {
     private let pages: [OnboardingPage] = [
         OnboardingPage(
             symbol: "music.note.house",
-            tint: .pink,
+            tint: Brand.accent,
             title: "Welcome to MixStack",
             message: "Your home for the music you make — from first idea to finished release."
         ),
         OnboardingPage(
             symbol: "square.and.arrow.down",
-            tint: .orange,
+            tint: Brand.accentBright,
             title: "Build Your Library",
             message: "Import tracks straight from your DAW. MixStack auto-detects BPM and key "
                 + "and draws a waveform for each one."
         ),
         OnboardingPage(
             symbol: "waveform.badge.plus",
-            tint: .blue,
+            tint: Brand.accent,
             title: "Find the Best Take",
             message: "Keep every mix of a song, then A/B them in the player without losing your place "
                 + "to pick the winner."
         ),
         OnboardingPage(
             symbol: "square.stack.3d.up",
-            tint: .purple,
+            tint: Brand.accentBright,
             title: "Sequence Your Release",
             message: "Drag tracks into order and let the app flag energy dips, abrupt tempo jumps, "
                 + "and key clashes — or suggest an order for you."
         ),
         OnboardingPage(
             symbol: "photo",
-            tint: .green,
+            tint: Brand.accent,
             title: "Share It Beautifully",
             message: "Turn any song or project into a clean, on-brand release card to post anywhere."
         )
@@ -79,11 +79,13 @@ struct OnboardingView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .tint(Brand.accent)
             .controlSize(.large)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
             .accessibilityIdentifier("onboarding.primaryButton")
         }
+        .brandHeroBackground()
         .interactiveDismissDisabled()
     }
 
@@ -95,17 +97,17 @@ struct OnboardingView: View {
                     .frame(width: 140, height: 140)
                 Image(systemName: page.symbol)
                     .font(.system(size: 60))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Brand.textOnAccent)
             }
             .accessibilityHidden(true)
 
             VStack(spacing: 12) {
                 Text(page.title)
-                    .font(.title.bold())
+                    .font(DS.Typography.display(.title))
                     .multilineTextAlignment(.center)
                 Text(page.message)
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Brand.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 32)

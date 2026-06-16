@@ -16,6 +16,7 @@ struct MixStackApp: App {
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
+        AppLog.shared.info(.app, eventName: "app_launched", message: "MixStack started")
     }
 
     var body: some Scene {
