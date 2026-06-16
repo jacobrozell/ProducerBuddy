@@ -15,6 +15,8 @@ struct EnergyPoint: Identifiable {
 /// more intuitive than reading per-row Rise/Fall badges. The peak track is
 /// marked so the user can see where their record crests.
 struct EnergyCurveChart: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     let points: [EnergyPoint]
 
     private var peak: EnergyPoint? {
@@ -75,6 +77,26 @@ struct EnergyCurveChart: View {
             }
         }
         .chartYAxisLabel("BPM")
-        .frame(height: 160)
+        .frame(height: chartHeight)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(chartAccessibilityLabel)
+    }
+
+    private var chartHeight: CGFloat {
+        AdaptiveLayout.isCompactHeight(verticalSizeClass) ? 120 : 160
+    }
+
+    private var chartAccessibilityLabel: String {
+        guard !points.isEmpty else { return "Energy curve, no tracks" }
+        let bpms = points.map(\.bpm)
+        let minBPM = bpms.min() ?? 0
+        let maxBPM = bpms.max() ?? 0
+        if let peak {
+            return """
+            Energy curve across \(points.count) tracks, BPM \(minBPM) to \(maxBPM), \
+            peak at track \(peak.position)
+            """
+        }
+        return "Energy curve across \(points.count) tracks, BPM \(minBPM) to \(maxBPM)"
     }
 }

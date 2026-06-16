@@ -4,70 +4,92 @@ import SwiftUI
 /// progress region scrubs; the button toggles play/pause.
 struct NowPlayingBar: View {
     @Environment(AudioPlayer.self) private var audioPlayer
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showingFullPlayer = false
 
+    private var compactHeight: Bool {
+        AdaptiveLayout.isCompactHeight(verticalSizeClass)
+    }
+
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: compactHeight ? 4 : 6) {
             ProgressView(value: progress)
-                .tint(.accentColor)
+                .tint(Brand.accent)
+                .accessibilityLabel("Playback progress")
+                .accessibilityValue(timeLabel)
 
             HStack(spacing: 12) {
+                trackSummary
+                Spacer(minLength: 8)
+                transportControls
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, compactHeight ? 6 : 8)
+        .background(.bar)
+        .sheet(isPresented: $showingFullPlayer) {
+            FullPlayerView()
+        }
+    }
+
+    private var trackSummary: some View {
+        Button {
+            showingFullPlayer = true
+        } label: {
+            HStack(spacing: 12) {
                 Image(systemName: "waveform")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Brand.accent)
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(audioPlayer.currentMix?.song?.title ?? "Unknown")
                         .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
+                        .lineLimit(compactHeight ? 1 : 2)
+                        .multilineTextAlignment(.leading)
                     Text(audioPlayer.currentMix?.name ?? "")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-
-                Spacer()
-
-                Text(timeLabel)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-
-                Button {
-                    Haptics.tap()
-                    audioPlayer.togglePlayPause()
-                } label: {
-                    Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title3)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(audioPlayer.isPlaying ? "Pause" : "Play")
-                .accessibilityIdentifier(A11yID.Player.playPause)
-
-                Button {
-                    audioPlayer.stop()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Stop")
-                .accessibilityIdentifier(A11yID.Player.stop)
             }
-            // Tapping the row (but not the buttons) expands the full player.
-            .contentShape(Rectangle())
-            .onTapGesture { showingFullPlayer = true }
-            .accessibilityIdentifier(A11yID.Player.bar)
-            // Keep the title/mix labels readable; expose expanding as an action
-            // so VoiceOver users aren't reliant on the tap gesture.
-            .accessibilityAction(named: "Open full player") { showingFullPlayer = true }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.bar)
-        .sheet(isPresented: $showingFullPlayer) {
-            FullPlayerView()
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(A11yID.Player.bar)
+        .accessibilityLabel("\(audioPlayer.currentMix?.song?.title ?? "Unknown"), \(timeLabel)")
+        .accessibilityHint("Opens full player")
+    }
+
+    private var transportControls: some View {
+        HStack(spacing: 8) {
+            Text(timeLabel)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            Button {
+                Haptics.tap()
+                audioPlayer.togglePlayPause()
+            } label: {
+                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .minimumTapTarget()
+            .accessibilityLabel(audioPlayer.isPlaying ? "Pause" : "Play")
+            .accessibilityIdentifier(A11yID.Player.playPause)
+
+            Button {
+                audioPlayer.stop()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .minimumTapTarget()
+            .accessibilityLabel("Stop")
+            .accessibilityIdentifier(A11yID.Player.stop)
         }
     }
 
@@ -81,6 +103,6 @@ struct NowPlayingBar: View {
             let totalSeconds = Int(time.rounded())
             return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
         }
-        return "\(fmt(audioPlayer.currentTime)) / \(fmt(audioPlayer.duration))"
+        return "\(fmt(audioPlayer.currentTime)) of \(fmt(audioPlayer.duration))"
     }
 }

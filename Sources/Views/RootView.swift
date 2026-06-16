@@ -33,9 +33,14 @@ struct RootView: View {
             OnboardingView { hasCompletedOnboarding = true }
         }
         .task {
+            if UITestLaunch.shouldSkipOnboarding {
+                hasCompletedOnboarding = true
+            }
             AppLog.shared.info(.app, eventName: "main_tab_presented", message: "Root tab shell presented")
-            // Defer one run loop so SwiftData and the tab hierarchy are ready.
             await Task.yield()
+            if UITestLaunch.shouldSeedCatalog {
+                UITestDataSeeder.seedIfEmpty(into: modelContext)
+            }
             await seedDemoTracksIfNeeded()
         }
     }

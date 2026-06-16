@@ -10,6 +10,6 @@ enum FeatureFlags {
     }
 
     static var uiTestMode: Bool {
-        CommandLine.arguments.contains("-ui_test_reset")
+        UITestLaunch.isUITestReset
     }
 }

@@ -12,9 +12,11 @@ enum LibrarySort: String, CaseIterable, Identifiable {
 }
 
 /// The main library screen: a searchable, sortable, filterable list of every
-/// song the producer has imported.
+/// song the producer has imported. Uses split view on iPad regular width.
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var songs: [Song]
     @Query private var projects: [Project]
 
@@ -38,177 +40,217 @@ struct LibraryView: View {
     @State private var songForProject: Song?
     @State private var pendingImportPlan: ImportPlan?
     @State private var pendingImportFailures: [String] = []
+    @State private var selectedSongID: UUID?
 
     var body: some View {
+        Group {
+            if usesSplitLayout {
+                librarySplitView
+            } else {
+                libraryCompactView
+            }
+        }
+        .sheet(isPresented: $showingSettings) { SettingsView() }
+        .sheet(isPresented: $showingNewSong) { SongEditorView(song: nil) }
+        .sheet(isPresented: $showingFilters) {
+            LibraryFiltersSheet(
+                bpmMin: $bpmMin,
+                bpmMax: $bpmMax,
+                selectedKeys: $selectedKeys,
+                vocalFilter: $vocalFilter,
+                favoritesOnly: $favoritesOnly
+            )
+        }
+        .sheet(isPresented: addToProjectPresented) {
+            if let song = songForProject { AddToProjectSheet(song: song) }
+        }
+        .sheet(isPresented: importResolutionPresented) {
+            ImportResolutionSheet(
+                plan: Binding(
+                    get: { pendingImportPlan ?? ImportPlan(items: []) },
+                    set: { pendingImportPlan = $0 }
+                ),
+                songs: songs,
+                onConfirm: commitImportPlan
+            )
+        }
+        .songImporter(isPresented: $showingImporter, importTask: $importTask) { current, total in
+            importProgress = (current, total)
+        } onImport: { results, failures in
+            finishImport(results: results, failures: failures)
+        }
+        .overlay(alignment: .bottom) {
+            if !lastImportMessage.isEmpty {
+                ImportSuccessBannerView(message: lastImportMessage) {
+                    withAnimation { lastImportMessage = "" }
+                }
+            }
+        }
+        .confirmationDialog(
+            deleteDialogTitle,
+            isPresented: deleteDialogPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let song = songPendingDelete { deleteSong(song) }
+            }
+            Button("Cancel", role: .cancel) { songPendingDelete = nil }
+        } message: {
+            if let song = songPendingDelete {
+                Text(deleteDialogMessage(for: song))
+            }
+        }
+        .alert("Import Failed", isPresented: importFailureAlertPresented) {
+            Button("OK") { importFailures = [] }
+        } message: {
+            Text(LibraryImportActions.importFailureMessage(importFailures))
+        }
+        .onChange(of: filteredSongIDs) { _, ids in
+            guard let selectedSongID, !ids.contains(selectedSongID) else { return }
+            self.selectedSongID = nil
+        }
+    }
+
+    private var usesSplitLayout: Bool {
+        AdaptiveLayout.usesSplitNavigation(horizontalSizeClass)
+    }
+
+    private var sidebarWidth: SplitColumnWidth {
+        AdaptiveLayout.splitColumnWidth(dynamicType: dynamicTypeSize)
+    }
+
+    private var selectedSong: Song? {
+        guard let selectedSongID else { return nil }
+        return songs.first { $0.id == selectedSongID }
+    }
+
+    private var filteredSongIDs: Set<UUID> {
+        Set(filteredSongs.map(\.id))
+    }
+}
+
+// MARK: - Catalog list & adaptive navigation
+
+extension LibraryView {
+    private var libraryCompactView: some View {
         NavigationStack {
-            List {
-                if let progress = importProgress {
-                    Section {
-                        ImportProgressBannerView(
-                            current: progress.current,
-                            total: progress.total,
-                            onCancel: cancelImport
-                        )
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    }
-                }
+            libraryCatalogList(splitSelection: false)
+                .navigationTitle("Library")
+                .searchable(text: $searchText, prompt: "Search songs, artists, genres, notes")
+                .toolbar { libraryToolbarContent }
+        }
+    }
 
-                if !songs.isEmpty {
-                    Section {
-                        LibraryStatsHeader(
-                            songCount: songs.count,
-                            mixCount: totalMixCount,
-                            projectCount: projects.count
-                        )
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
+    private var librarySplitView: some View {
+        NavigationSplitView {
+            NavigationStack {
+                libraryCatalogList(splitSelection: true)
+                    .navigationTitle("Library")
+                    .searchable(text: $searchText, prompt: "Search songs, artists, genres, notes")
+                    .toolbar { libraryToolbarContent }
+            }
+            .navigationSplitViewColumnWidth(
+                min: sidebarWidth.min,
+                ideal: sidebarWidth.ideal,
+                max: sidebarWidth.max
+            )
+        } detail: {
+            if let selectedSong {
+                SongDetailView(song: selectedSong)
+            } else {
+                ContentUnavailableView {
+                    Label("Select a Song", systemImage: "music.note")
+                } description: {
+                    Text("Choose a track from your library to view mixes, metadata, and share options.")
                 }
-
-                Section {
-                    LibraryCategoryFilterBar(
-                        categoryFilter: $categoryFilter,
-                        filtersAreActive: filtersAreActive,
-                        onShowFilters: { showingFilters = true }
-                    )
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-                }
-
-                if filteredSongs.isEmpty {
-                    Section {
-                        emptyState
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
-                } else {
-                    ForEach(listSections) { section in
-                        if section.title.isEmpty {
-                            ForEach(section.songs) { song in
-                                songRow(song)
-                            }
-                        } else {
-                            Section(section.title) {
-                                ForEach(section.songs) { song in
-                                    songRow(song)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .navigationTitle("Library")
-            .searchable(text: $searchText, prompt: "Search songs, artists, genres, notes")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    sortMenu
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: DS.Spacing.sm) {
-                        if ReleaseSurface.settings {
-                            Button {
-                                showingSettings = true
-                            } label: {
-                                Image(systemName: "gearshape")
-                            }
-                            .accessibilityLabel("Settings")
-                            .accessibilityIdentifier(A11yID.Settings.button)
-                        }
-                        Menu {
-                        Button("Import Audio…", systemImage: "square.and.arrow.down") {
-                            showingImporter = true
-                        }
-                        .accessibilityIdentifier(A11yID.Library.importAudio)
-                        Button("New Song", systemImage: "square.and.pencil") {
-                            showingNewSong = true
-                        }
-                        .accessibilityIdentifier(A11yID.Library.newSong)
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Add")
-                    .accessibilityIdentifier(A11yID.Library.addMenu)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
-            .sheet(isPresented: $showingNewSong) {
-                SongEditorView(song: nil)
-            }
-            .sheet(isPresented: $showingFilters) {
-                LibraryFiltersSheet(
-                    bpmMin: $bpmMin,
-                    bpmMax: $bpmMax,
-                    selectedKeys: $selectedKeys,
-                    vocalFilter: $vocalFilter,
-                    favoritesOnly: $favoritesOnly
-                )
-            }
-            .sheet(isPresented: addToProjectPresented) {
-                if let song = songForProject {
-                    AddToProjectSheet(song: song)
-                }
-            }
-            .sheet(isPresented: importResolutionPresented) {
-                ImportResolutionSheet(
-                    plan: Binding(
-                        get: { pendingImportPlan ?? ImportPlan(items: []) },
-                        set: { pendingImportPlan = $0 }
-                    ),
-                    songs: songs,
-                    onConfirm: commitImportPlan
-                )
-            }
-            .songImporter(isPresented: $showingImporter, importTask: $importTask) { current, total in
-                importProgress = (current, total)
-            } onImport: { results, failures in
-                finishImport(results: results, failures: failures)
-            }
-            .overlay(alignment: .bottom) {
-                if !lastImportMessage.isEmpty {
-                    ImportSuccessBannerView(message: lastImportMessage) {
-                        withAnimation { lastImportMessage = "" }
-                    }
-                }
-            }
-            .confirmationDialog(
-                deleteDialogTitle,
-                isPresented: deleteDialogPresented,
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) {
-                    if let song = songPendingDelete { deleteSong(song) }
-                }
-                Button("Cancel", role: .cancel) { songPendingDelete = nil }
-            } message: {
-                if let song = songPendingDelete {
-                    Text(deleteDialogMessage(for: song))
-                }
-            }
-            .alert("Import Failed", isPresented: importFailureAlertPresented) {
-                Button("OK") { importFailures = [] }
-            } message: {
-                Text(LibraryImportActions.importFailureMessage(importFailures))
+                .adaptiveEmptyStateLayout()
             }
         }
     }
 
+    private func libraryCatalogList(splitSelection: Bool) -> some View {
+        List {
+            if let progress = importProgress {
+                Section {
+                    ImportProgressBannerView(
+                        current: progress.current,
+                        total: progress.total,
+                        onCancel: cancelImport
+                    )
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
+            }
+
+            if !songs.isEmpty {
+                Section {
+                    LibraryStatsHeader(
+                        songCount: songs.count,
+                        mixCount: totalMixCount,
+                        projectCount: projects.count
+                    )
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                }
+            }
+
+            Section {
+                LibraryCategoryFilterBar(
+                    categoryFilter: $categoryFilter,
+                    filtersAreActive: filtersAreActive,
+                    onShowFilters: { showingFilters = true }
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+            }
+
+            if filteredSongs.isEmpty {
+                Section {
+                    emptyState
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+            } else {
+                ForEach(listSections) { section in
+                    if section.title.isEmpty {
+                        ForEach(section.songs) { song in
+                            songRow(song, splitSelection: splitSelection)
+                        }
+                    } else {
+                        Section(section.title) {
+                            ForEach(section.songs) { song in
+                                songRow(song, splitSelection: splitSelection)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+    }
+
     @ViewBuilder
-    private func songRow(_ song: Song) -> some View {
-        NavigationLink {
-            SongDetailView(song: song)
-        } label: {
-            SongRow(song: song)
+    private func songRow(_ song: Song, splitSelection: Bool) -> some View {
+        Group {
+            if splitSelection {
+                Button {
+                    selectedSongID = song.id
+                } label: {
+                    SongRow(song: song)
+                }
+                .buttonStyle(.plain)
+                .listSidebarSelection(isSelected: selectedSongID == song.id, enabled: true)
+            } else {
+                NavigationLink {
+                    SongDetailView(song: song)
+                } label: {
+                    SongRow(song: song)
+                }
+            }
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                toggleFavorite(song)
-            } label: {
+            Button { toggleFavorite(song) } label: {
                 Label(
                     song.isFavorite ? "Unfavorite" : "Favorite",
                     systemImage: song.isFavorite ? "star.slash" : "star.fill"
@@ -217,16 +259,11 @@ struct LibraryView: View {
             .tint(.yellow)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button {
-                songForProject = song
-            } label: {
+            Button { songForProject = song } label: {
                 Label("Add to Project", systemImage: "plus.square.on.square")
             }
             .tint(.accentColor)
-
-            Button(role: .destructive) {
-                songPendingDelete = song
-            } label: {
+            Button(role: .destructive) { songPendingDelete = song } label: {
                 Label("Delete", systemImage: "trash")
             }
         }
@@ -242,7 +279,40 @@ struct LibraryView: View {
         } label: {
             Image(systemName: "arrow.up.arrow.down")
         }
+        .accessibilityLabel("Sort")
         .accessibilityIdentifier(A11yID.Library.sortMenu)
+    }
+
+    @ToolbarContentBuilder
+    private var libraryToolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            sortMenu
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            HStack(spacing: DS.Spacing.sm) {
+                if ReleaseSurface.settings {
+                    Button { showingSettings = true } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Settings")
+                    .accessibilityIdentifier(A11yID.Settings.button)
+                }
+                Menu {
+                    Button("Import Audio…", systemImage: "square.and.arrow.down") {
+                        showingImporter = true
+                    }
+                    .accessibilityIdentifier(A11yID.Library.importAudio)
+                    Button("New Song", systemImage: "square.and.pencil") {
+                        showingNewSong = true
+                    }
+                    .accessibilityIdentifier(A11yID.Library.newSong)
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Add")
+                .accessibilityIdentifier(A11yID.Library.addMenu)
+            }
+        }
     }
 
     private var filtersAreActive: Bool {
@@ -274,6 +344,7 @@ struct LibraryView: View {
                 Button("Clear Filters") { resetFilters() }
             }
         }
+        .adaptiveEmptyStateLayout()
     }
 
     private func finishImport(results: [ImportedAudio], failures: [String]) {
@@ -345,6 +416,7 @@ struct LibraryView: View {
     }
 
     private func deleteSong(_ song: Song) {
+        if selectedSongID == song.id { selectedSongID = nil }
         for mix in song.mixes {
             AudioStorage.deleteFile(named: mix.fileName)
         }

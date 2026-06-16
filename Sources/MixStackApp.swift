@@ -9,10 +9,9 @@ struct MixStackApp: App {
     @State private var audioPlayer = AudioPlayer()
 
     init() {
+        UITestLaunch.prepareAppDefaultsIfNeeded()
         do {
-            modelContainer = try ModelContainer(
-                for: Song.self, Mix.self, Project.self, ProjectTrack.self
-            )
+            modelContainer = try ModelContainerFactory.makeContainer()
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }

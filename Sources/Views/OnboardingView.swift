@@ -1,19 +1,13 @@
 import SwiftUI
 
-/// A single onboarding page.
-private struct OnboardingPage: Identifiable {
-    let id = UUID()
-    let symbol: String
-    let tint: Color
-    let title: String
-    let message: String
-}
-
 /// First-run introduction. Explains the core workflow across a few swipeable
 /// pages and calls `onFinish` when the user is done (or skips). Shown once,
 /// gated by `@AppStorage("hasCompletedOnboarding")` in `RootView`.
 struct OnboardingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 140
+
     let onFinish: () -> Void
 
     @State private var selection = 0
@@ -54,6 +48,10 @@ struct OnboardingView: View {
         )
     ]
 
+    private var compactHeight: Bool {
+        AdaptiveLayout.isCompactHeight(verticalSizeClass)
+    }
+
     private var isLastPage: Bool { selection == pages.count - 1 }
 
     var body: some View {
@@ -62,6 +60,7 @@ struct OnboardingView: View {
                 Spacer()
                 Button("Skip", action: onFinish)
                     .padding()
+                    .minimumTapTarget()
                     .accessibilityHint("Skips the introduction")
             }
 
@@ -70,8 +69,8 @@ struct OnboardingView: View {
                     pageView(page).tag(index)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .tabViewStyle(.page(indexDisplayMode: compactHeight ? .never : .always))
+            .indexViewStyle(.page(backgroundDisplayMode: compactHeight ? .never : .always))
 
             Button(action: advance) {
                 Text(isLastPage ? "Get Started" : "Continue")
@@ -82,7 +81,7 @@ struct OnboardingView: View {
             .tint(Brand.accent)
             .controlSize(.large)
             .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.bottom, compactHeight ? 12 : 24)
             .accessibilityIdentifier("onboarding.primaryButton")
         }
         .brandHeroBackground()
@@ -90,29 +89,43 @@ struct OnboardingView: View {
     }
 
     private func pageView(_ page: OnboardingPage) -> some View {
-        VStack(spacing: 28) {
-            ZStack {
-                Circle()
-                    .fill(page.tint.gradient)
-                    .frame(width: 140, height: 140)
-                Image(systemName: page.symbol)
-                    .font(.system(size: 60))
-                    .foregroundStyle(Brand.textOnAccent)
-            }
-            .accessibilityHidden(true)
+        ScrollView {
+            VStack(spacing: compactHeight ? 16 : 28) {
+                ZStack {
+                    Circle()
+                        .fill(page.tint.gradient)
+                        .frame(
+                            width: AdaptiveLayout.onboardingHeroSize(
+                                compactHeight: compactHeight,
+                                scaled: heroSize
+                            ),
+                            height: AdaptiveLayout.onboardingHeroSize(
+                                compactHeight: compactHeight,
+                                scaled: heroSize
+                            )
+                        )
+                    Image(systemName: page.symbol)
+                        .font(.system(size: compactHeight ? 36 : 60))
+                        .foregroundStyle(Brand.textOnAccent)
+                }
+                .accessibilityHidden(true)
 
-            VStack(spacing: 12) {
-                Text(page.title)
-                    .font(DS.Typography.display(.title))
-                    .multilineTextAlignment(.center)
-                Text(page.message)
-                    .font(.body)
-                    .foregroundStyle(Brand.textSecondary)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 12) {
+                    Text(page.title)
+                        .font(DS.Typography.display(compactHeight ? .title2 : .title))
+                        .multilineTextAlignment(.center)
+                    Text(page.message)
+                        .font(.body)
+                        .foregroundStyle(Brand.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, compactHeight ? 20 : 32)
             }
-            .padding(.horizontal, 32)
+            .padding(.vertical, compactHeight ? 8 : 16)
+            .frame(maxWidth: .infinity)
         }
-        .padding()
+        .scrollBounceBehavior(.basedOnSize)
         .accessibilityElement(children: .combine)
     }
 
@@ -125,4 +138,13 @@ struct OnboardingView: View {
             }
         }
     }
+}
+
+/// A single onboarding page.
+private struct OnboardingPage: Identifiable {
+    let id = UUID()
+    let symbol: String
+    let tint: Color
+    let title: String
+    let message: String
 }

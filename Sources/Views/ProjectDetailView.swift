@@ -76,6 +76,7 @@ struct ProjectDetailView: View {
                             .font(.title2)
                             .foregroundStyle(.white)
                     }
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.title)

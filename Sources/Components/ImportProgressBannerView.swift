@@ -17,6 +17,8 @@ struct ImportProgressBannerView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Importing \(current) of \(total)")
         .accessibilityIdentifier(A11yID.Library.importProgress)
     }
 }

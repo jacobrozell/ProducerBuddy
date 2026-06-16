@@ -76,6 +76,7 @@ struct SongDetailView: View {
                     .padding(.vertical, 10)
                     .background(.regularMaterial, in: Capsule())
                     .padding(.bottom, 12)
+                    .accessibilityLabel("Analyzing audio")
             }
         }
         .confirmationDialog(
@@ -112,6 +113,7 @@ struct SongDetailView: View {
                         UIPasteboard.general.string = exportPrefixDraft
                     }
                     .labelStyle(.iconOnly)
+                    .accessibilityLabel("Copy export prefix")
                 }
             }
             if let prefixValidation {
@@ -175,6 +177,7 @@ struct SongDetailView: View {
                             .font(.system(size: 44))
                             .foregroundStyle(.white.opacity(0.9))
                     }
+                    .accessibilityHidden(true)
                 HStack {
                     CategoryBadge(category: song.category)
                     if song.mixes.count > 1 {
