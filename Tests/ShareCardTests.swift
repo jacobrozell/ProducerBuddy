@@ -1,6 +1,6 @@
 import Testing
 import CoreGraphics
-@testable import ProducerBuddy
+@testable import MixStack
 
 @Suite("Share Cards")
 struct ShareCardTests {

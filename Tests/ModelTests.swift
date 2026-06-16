@@ -1,7 +1,7 @@
 import Testing
 import SwiftData
 import Foundation
-@testable import ProducerBuddy
+@testable import MixStack
 
 @Suite("Models")
 @MainActor

@@ -1,5 +1,5 @@
 import Testing
-@testable import ProducerBuddy
+@testable import MixStack
 
 @Suite("Waveform")
 struct WaveformTests {

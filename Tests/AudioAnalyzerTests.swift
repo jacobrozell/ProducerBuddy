@@ -1,8 +1,8 @@
 import Testing
 import Foundation
-@testable import ProducerBuddy
+@testable import MixStack
 
-@Suite("Audio Analyzer")
+@Suite("Audio Analyzer", .serialized)
 struct AudioAnalyzerTests {
 
     private let sampleRate = 11_025.0
@@ -48,8 +48,8 @@ struct AudioAnalyzerTests {
     private func tones(_ freqs: [Double], seconds: Double) -> [Float] {
         let count = Int(seconds * sampleRate)
         var samples = [Float](repeating: 0, count: count)
-        for f in freqs {
-            let step = 2.0 * Double.pi * f / sampleRate
+        for freq in freqs {
+            let step = 2.0 * Double.pi * freq / sampleRate
             for i in 0..<count {
                 samples[i] += Float(sin(step * Double(i)))
             }
@@ -60,7 +60,8 @@ struct AudioAnalyzerTests {
     @Test("A C major triad reads as C major or its relative A minor")
     func detectsCMajorTriad() {
         // C4, E4, G4 — a C major chord.
-        let key = AudioAnalyzer.estimateKey(samples: tones([261.63, 329.63, 392.00], seconds: 4), sampleRate: sampleRate)
+        let samples = tones([261.63, 329.63, 392.00], seconds: 4)
+        let key = AudioAnalyzer.estimateKey(samples: samples, sampleRate: sampleRate)
         #expect(key != nil)
         if let key { #expect([.cMajor, .aMinor].contains(key)) }
     }

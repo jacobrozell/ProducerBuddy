@@ -1,7 +1,7 @@
 import Testing
-@testable import ProducerBuddy
+@testable import MixStack
 
-@Suite("Audio Player")
+@Suite("Audio Player", .serialized)
 @MainActor
 struct AudioPlayerTests {
 
