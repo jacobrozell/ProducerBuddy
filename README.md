@@ -13,6 +13,9 @@ ProducerBuddy follows a producer's workflow from raw idea to release:
   song with BPM, key, genre, a workflow category (idea → demo → WIP → ready to
   mix → mastered → released), star rating, and notes. Search, sort, and filter
   by category.
+- **Auto BPM & key detection** — On import (or on demand) ProducerBuddy analyzes
+  the audio to estimate tempo and musical key, pre-filling the fields so you
+  rarely type them by hand.
 - **Multiple mixes per song** — Keep every version of a track (rough mix,
   master v2, …) and mark one as the "primary".
 - **Playback** — A persistent now-playing bar sits above the tab bar; tap it for

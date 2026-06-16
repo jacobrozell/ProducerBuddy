@@ -11,6 +11,7 @@ struct SongDetailView: View {
     @State private var showingEditor = false
     @State private var showingImporter = false
     @State private var showingShareCard = false
+    @State private var isDetecting = false
     @State private var pendingMixName = ""
 
     var body: some View {
@@ -31,6 +32,8 @@ struct SongDetailView: View {
                 Menu {
                     Button("Edit", systemImage: "pencil") { showingEditor = true }
                     Button("Add Mix", systemImage: "waveform.badge.plus") { showingImporter = true }
+                    Button("Detect BPM & Key", systemImage: "wand.and.stars") { detectMetadata() }
+                        .disabled(song.primaryMix == nil || isDetecting)
                     Button("Share Card", systemImage: "photo") { showingShareCard = true }
                     ShareLink(item: shareText) {
                         Label("Share Text", systemImage: "square.and.arrow.up")
@@ -48,6 +51,30 @@ struct SongDetailView: View {
         }
         .sheet(isPresented: $showingShareCard) {
             ShareCardSheet(content: .song(song))
+        }
+        .overlay(alignment: .bottom) {
+            if isDetecting {
+                Label("Analyzing audio…", systemImage: "waveform.and.magnifyingglass")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.bottom, 12)
+            }
+        }
+    }
+
+    /// Runs BPM/key detection on the song's primary mix and writes the results
+    /// back onto the song.
+    private func detectMetadata() {
+        guard let mix = song.primaryMix else { return }
+        isDetecting = true
+        let url = mix.fileURL
+        Task { @MainActor in
+            let analysis = await AudioAnalyzer.analyze(url: url)
+            if let bpm = analysis.bpm { song.bpm = bpm }
+            if let key = analysis.key, key != .unknown { song.key = key }
+            isDetecting = false
         }
     }
 

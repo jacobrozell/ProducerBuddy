@@ -144,7 +144,8 @@ struct LibraryView: View {
     }
 
     /// Creates one song (with a primary mix) per imported file, pre-filling the
-    /// title/artist from embedded tags or the filename.
+    /// title/artist from embedded tags or the filename, then kicks off automatic
+    /// BPM/key detection in the background.
     private func importSongs(_ results: [ImportedAudio]) {
         for audio in results {
             let song = Song(title: audio.suggestedTitle, artist: audio.artist ?? "")
@@ -158,8 +159,22 @@ struct LibraryView: View {
             )
             mix.song = song
             modelContext.insert(mix)
+
+            detectMetadata(for: song.persistentModelID, fileURL: mix.fileURL)
         }
         withAnimation { lastImportCount = results.count }
+    }
+
+    /// Analyses the audio off the main actor and writes the detected BPM/key back
+    /// onto the song once finished. The song is re-fetched by id to avoid passing
+    /// a non-Sendable model across the task boundary.
+    private func detectMetadata(for songID: PersistentIdentifier, fileURL: URL) {
+        Task { @MainActor in
+            let analysis = await AudioAnalyzer.analyze(url: fileURL)
+            guard let song = modelContext.model(for: songID) as? Song else { return }
+            if let bpm = analysis.bpm { song.bpm = bpm }
+            if let key = analysis.key, key != .unknown { song.key = key }
+        }
     }
 
     /// Search + category filter, then sort.

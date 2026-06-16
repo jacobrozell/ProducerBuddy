@@ -52,6 +52,22 @@ enum MusicalKey: String, Codable, CaseIterable, Identifiable, Sendable {
         return "\(c.number)\(c.isMajor ? "B" : "A")"
     }
 
+    /// Builds a key from a chromatic pitch class (0 = C, 1 = C♯/D♭, … 11 = B)
+    /// and a mode. Used by the audio analyzer to turn a detected tonic into a
+    /// concrete `MusicalKey`.
+    static func from(pitchClass: Int, isMajor: Bool) -> MusicalKey {
+        let major: [MusicalKey] = [
+            .cMajor, .dFlatMajor, .dMajor, .eFlatMajor, .eMajor, .fMajor,
+            .fSharpMajor, .gMajor, .aFlatMajor, .aMajor, .bFlatMajor, .bMajor
+        ]
+        let minor: [MusicalKey] = [
+            .cMinor, .cSharpMinor, .dMinor, .dSharpMinor, .eMinor, .fMinor,
+            .fSharpMinor, .gMinor, .gSharpMinor, .aMinor, .bFlatMinor, .bMinor
+        ]
+        let pc = ((pitchClass % 12) + 12) % 12
+        return isMajor ? major[pc] : minor[pc]
+    }
+
     var displayName: String {
         switch self {
         case .unknown: return "—"

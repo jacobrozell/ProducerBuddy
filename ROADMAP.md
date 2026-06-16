@@ -121,7 +121,12 @@ Heavier lifts that move the app toward a real production companion.
 
 - **Waveform views** for every mix (offline-rendered, cached) — table stakes for
   anything audio-facing and a prerequisite for A/B looping and audiograms.
-- **Auto BPM & key detection** on import so users rarely type these by hand.
+- ✅ **Auto BPM & key detection.** *(Shipped.)* On import (and on demand via
+  "Detect BPM & Key"), `AudioAnalyzer` estimates tempo by autocorrelating an
+  onset-energy envelope and key via a Goertzel chromagram correlated against the
+  Krumhansl–Schmuckler profiles — a lightweight estimate the user can correct,
+  computed off the main actor. *Next:* a confidence score and tightening
+  accuracy with a proper spectral-flux onset detector.
 - **Reference-loudness check.** Show integrated LUFS per mix so the user can
   spot a master that's too quiet/hot before release. (Analysis only — not a
   mastering engine.)
@@ -184,7 +189,9 @@ A rough order that delivers visible value early and builds toward the vision:
    flags clashes between adjacent tracks. *(Still open: arc templates and
    actively suggesting compatible neighbours.)*
 7. **iCloud sync** — makes it trustworthy for a real catalog.
-8. **Waveforms + auto BPM/key** — unlocks audiograms and reduces manual entry.
+8. ~~**Auto BPM/key detection**~~ — ✅ shipped (see §4). Runs on import and on
+   demand, pre-filling metadata so users rarely type tempo/key by hand.
+9. **Waveforms** — unlocks audiograms and per-mix timeline navigation.
 
 Items in §1 (accessibility, swipe actions, delete confirmation, haptics) are
 small enough to fold into whichever release touches the relevant screen.
