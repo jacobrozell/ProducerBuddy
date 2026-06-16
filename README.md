@@ -19,10 +19,10 @@ ProducerBuddy follows a producer's workflow from raw idea to release:
 - **Multiple mixes per song** — Keep every version of a track (rough mix,
   master v2, …) and mark one as the "primary".
 - **Playback** — A persistent now-playing bar sits above the tab bar; tap it for
-  a full-screen player with a draggable scrubber, ±15s skip, a loop toggle, and
-  an **A/B mix compare** that swaps versions without losing your position.
-  Audio keeps playing in the background with full **lock-screen / Control Center
-  controls**.
+  a full-screen player with an **interactive waveform scrubber**, ±15s skip, a
+  loop toggle, and an **A/B mix compare** that swaps versions without losing your
+  position. Each mix shows a cached **waveform**. Audio keeps playing in the
+  background with full **lock-screen / Control Center controls**.
 - **Projects (albums / EPs / singles / mixtapes)** — Group songs into a release
   and design the running order.
 - **Sequencing engine** — For each track the app reports an energy **Rise**,

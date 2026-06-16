@@ -161,8 +161,18 @@ struct LibraryView: View {
             modelContext.insert(mix)
 
             detectMetadata(for: song.persistentModelID, fileURL: mix.fileURL)
+            generateWaveform(for: mix.persistentModelID, fileURL: mix.fileURL)
         }
         withAnimation { lastImportCount = results.count }
+    }
+
+    /// Generates and caches a mix's waveform in the background.
+    private func generateWaveform(for mixID: PersistentIdentifier, fileURL: URL) {
+        Task { @MainActor in
+            let peaks = await WaveformGenerator.generate(url: fileURL)
+            guard !peaks.isEmpty, let mix = modelContext.model(for: mixID) as? Mix else { return }
+            mix.waveform = peaks
+        }
     }
 
     /// Analyses the audio off the main actor and writes the detected BPM/key back

@@ -16,6 +16,9 @@ final class Mix {
     /// Marks the mix the user considers the "current best" version.
     var isPrimary: Bool
     var dateAdded: Date
+    /// Cached, normalized (0–1) waveform peaks for quick drawing. Empty until
+    /// generated; computed once at import and reused thereafter.
+    var waveform: [Float]
 
     var song: Song?
 
@@ -26,7 +29,8 @@ final class Mix {
         duration: Double = 0,
         notes: String = "",
         isPrimary: Bool = false,
-        dateAdded: Date = .now
+        dateAdded: Date = .now,
+        waveform: [Float] = []
     ) {
         self.id = id
         self.name = name
@@ -35,7 +39,10 @@ final class Mix {
         self.notes = notes
         self.isPrimary = isPrimary
         self.dateAdded = dateAdded
+        self.waveform = waveform
     }
+
+    var hasWaveform: Bool { !waveform.isEmpty }
 
     /// Resolved absolute URL of the audio file in the app's storage directory.
     var fileURL: URL {

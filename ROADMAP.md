@@ -119,8 +119,10 @@ Deepen the feature that makes this app more than a file manager.
 
 Heavier lifts that move the app toward a real production companion.
 
-- **Waveform views** for every mix (offline-rendered, cached) — table stakes for
-  anything audio-facing and a prerequisite for A/B looping and audiograms.
+- ✅ **Waveform views** for every mix. *(Shipped.)* Audio is streamed into
+  normalized peak buckets, cached on the `Mix`, and drawn with `Canvas`; the full
+  player uses it as an interactive scrubber and mix rows show a mini waveform.
+  Still a prerequisite for audiograms and section-loop A/B.
 - ✅ **Auto BPM & key detection.** *(Shipped.)* On import (and on demand via
   "Detect BPM & Key"), `AudioAnalyzer` estimates tempo by autocorrelating an
   onset-energy envelope and key via a Goertzel chromagram correlated against the
@@ -191,7 +193,10 @@ A rough order that delivers visible value early and builds toward the vision:
 7. **iCloud sync** — makes it trustworthy for a real catalog.
 8. ~~**Auto BPM/key detection**~~ — ✅ shipped (see §4). Runs on import and on
    demand, pre-filling metadata so users rarely type tempo/key by hand.
-9. **Waveforms** — unlocks audiograms and per-mix timeline navigation.
+9. ~~**Waveforms**~~ — ✅ shipped. Mixes get a cached waveform (streamed into
+   peak buckets) drawn with `Canvas`; the full player uses it as an interactive
+   scrubber and each mix row shows a mini waveform. *Next:* audiograms built on
+   top of the same peaks.
 
 Items in §1 (accessibility, swipe actions, delete confirmation, haptics) are
 small enough to fold into whichever release touches the relevant screen.

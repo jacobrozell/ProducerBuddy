@@ -156,6 +156,14 @@ struct SongDetailView: View {
         )
         mix.song = song
         modelContext.insert(mix)
+
+        let mixID = mix.persistentModelID
+        let url = mix.fileURL
+        Task { @MainActor in
+            let peaks = await WaveformGenerator.generate(url: url)
+            guard !peaks.isEmpty, let mix = modelContext.model(for: mixID) as? Mix else { return }
+            mix.waveform = peaks
+        }
     }
 
     private func setPrimary(_ mix: Mix) {
@@ -201,8 +209,20 @@ private struct MixRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .layoutPriority(1)
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            if mix.hasWaveform {
+                WaveformView(
+                    samples: mix.waveform,
+                    progress: isCurrent ? playedFraction : 0,
+                    playedColor: .accentColor,
+                    unplayedColor: Color(.systemGray4)
+                )
+                .frame(width: 90, height: 28)
+                .allowsHitTesting(false)
+            }
 
             Button {
                 onTogglePrimary()
@@ -216,5 +236,15 @@ private struct MixRow: View {
 
     private var isPlaying: Bool {
         audioPlayer.isPlaying && audioPlayer.currentMix?.id == mix.id
+    }
+
+    private var isCurrent: Bool {
+        audioPlayer.currentMix?.id == mix.id
+    }
+
+    /// Playback progress (0–1) for the mini waveform when this mix is loaded.
+    private var playedFraction: Double {
+        guard isCurrent, audioPlayer.duration > 0 else { return 0 }
+        return audioPlayer.currentTime / audioPlayer.duration
     }
 }
