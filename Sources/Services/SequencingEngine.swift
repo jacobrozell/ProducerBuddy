@@ -79,7 +79,9 @@ enum SequencingEngine {
 
         for (index, bpm) in bpms.enumerated() {
             guard index > 0 else {
-                results.append(FlowAnalysis(id: UUID(), move: .opener, bpmDelta: 0, hasWarning: false, warningText: nil))
+                results.append(
+                    FlowAnalysis(id: UUID(), move: .opener, bpmDelta: 0, hasWarning: false, warningText: nil)
+                )
                 continue
             }
 
@@ -121,7 +123,8 @@ enum SequencingEngine {
             let compatible = areHarmonicallyCompatible(previous, current)
             let text = compatible
                 ? nil
-                : "Key clash: \(previous.camelotCode ?? previous.displayName) → \(current.camelotCode ?? current.displayName)"
+                : "Key clash: \(previous.camelotCode ?? previous.displayName) → "
+                    + "\(current.camelotCode ?? current.displayName)"
 
             return FlowAnalysis(
                 id: analysis.id,

@@ -36,6 +36,6 @@ enum ReleaseCardRenderer {
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
             .joined(separator: "-")
-        return safe.isEmpty ? "ProducerBuddy-Card" : safe
+        return safe.isEmpty ? "MixStack-Card" : safe
     }
 }

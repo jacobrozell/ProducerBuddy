@@ -15,6 +15,8 @@ struct ImportedAudio: Sendable {
     let artist: String?
     /// A human-friendly fallback title derived from the original filename.
     let suggestedTitle: String
+    /// Basename of the picked file (no extension), for prefix matching.
+    let sourceBasename: String
 }
 
 enum AudioStorage {
@@ -43,6 +45,16 @@ enum AudioStorage {
         return fileName
     }
 
+    /// Copies a file from the app bundle into storage (no security-scoped access).
+    static func importBundledAudio(from bundleURL: URL) async throws -> ImportedAudio {
+        let originalName = bundleURL.deletingPathExtension().lastPathComponent
+        let ext = bundleURL.pathExtension.isEmpty ? "m4a" : bundleURL.pathExtension
+        let fileName = "\(UUID().uuidString).\(ext)"
+        let destination = audioDirectory.appendingPathComponent(fileName)
+        try FileManager.default.copyItem(at: bundleURL, to: destination)
+        return try await metadata(forStoredFile: fileName, originalName: originalName)
+    }
+
     /// Copies a picked file into storage and reads its duration and embedded
     /// title/artist tags in one pass. Used by the import-first Library flow so a
     /// song can be created with sensible defaults already filled in.
@@ -50,7 +62,10 @@ enum AudioStorage {
     static func importAudio(from sourceURL: URL) async throws -> ImportedAudio {
         let originalName = sourceURL.deletingPathExtension().lastPathComponent
         let fileName = try importFile(from: sourceURL)
+        return try await metadata(forStoredFile: fileName, originalName: originalName)
+    }
 
+    private static func metadata(forStoredFile fileName: String, originalName: String) async throws -> ImportedAudio {
         let asset = AVURLAsset(url: audioDirectory.appendingPathComponent(fileName))
         let duration = (try? await asset.load(.duration)).map(CMTimeGetSeconds) ?? 0
 
@@ -74,7 +89,8 @@ enum AudioStorage {
             duration: duration,
             title: nonEmpty(title),
             artist: nonEmpty(artist),
-            suggestedTitle: suggested
+            suggestedTitle: suggested,
+            sourceBasename: originalName
         )
     }
 

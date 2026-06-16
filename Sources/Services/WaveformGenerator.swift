@@ -30,13 +30,13 @@ enum WaveformGenerator {
 
             for i in 0..<frames {
                 // Peak of the downmixed sample.
-                var v: Float = 0
-                for ch in 0..<channelCount { v += abs(channels[ch][i]) }
-                v /= Float(channelCount)
+                var peak: Float = 0
+                for ch in 0..<channelCount { peak += abs(channels[ch][i]) }
+                peak /= Float(channelCount)
 
                 let position = globalIndex + Int64(i)
                 let bucket = min(buckets - 1, Int(position * Int64(buckets) / total))
-                if v > peaks[bucket] { peaks[bucket] = v }
+                if peak > peaks[bucket] { peaks[bucket] = peak }
             }
 
             globalIndex += Int64(frames)

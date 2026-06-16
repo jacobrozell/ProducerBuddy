@@ -6,6 +6,15 @@ import AVFoundation
 struct AudioAnalysis: Sendable {
     let bpm: Int?
     let key: MusicalKey?
+    let vocal: VocalAnalysis
+}
+
+/// Vocal presence estimate with an optional confidence score.
+struct VocalAnalysis: Sendable {
+    let presence: VocalPresence
+    let confidence: Double?
+
+    static let unknown = VocalAnalysis(presence: .unknown, confidence: nil)
 }
 
 /// Estimates tempo (BPM) and musical key directly from an audio file.
@@ -22,12 +31,162 @@ enum AudioAnalyzer {
     /// Reads `url`, then estimates its BPM and key.
     static func analyze(url: URL) async -> AudioAnalysis {
         guard let audio = loadMonoSamples(url: url, targetRate: 11_025, maxSeconds: 90),
-              audio.samples.count > audio.sampleRate else { // need at least ~1s
-            return AudioAnalysis(bpm: nil, key: nil)
+              Double(audio.samples.count) > audio.sampleRate else { // need at least ~1s
+            return AudioAnalysis(bpm: nil, key: nil, vocal: .unknown)
         }
         let bpm = estimateBPM(samples: audio.samples, sampleRate: audio.sampleRate)
         let key = estimateKey(samples: audio.samples, sampleRate: audio.sampleRate)
-        return AudioAnalysis(bpm: bpm, key: key)
+        let vocal = estimateVocalPresence(samples: audio.samples, sampleRate: audio.sampleRate)
+        return AudioAnalysis(bpm: bpm, key: key, vocal: vocal)
+    }
+
+    // MARK: - Vocals
+
+    private static let vocalLabelThreshold = VocalDetectionThresholds.labeled
+    private static let vocalMinimumConfidence = VocalDetectionThresholds.minimum
+
+    /// Heuristic vocal/instrumental estimate from mono PCM samples.
+    static func estimateVocalPresence(
+        samples: [Float], sampleRate: Double
+    ) -> VocalAnalysis {
+        let window = 2048
+        let hop = 512
+        guard samples.count > window * 4,
+              Double(samples.count) > sampleRate else {
+            return .unknown
+        }
+
+        let signalEnergy = samples.reduce(0.0) { $0 + Double($1 * $1) }
+        guard signalEnergy > 1e-4 * Double(samples.count) else {
+            return .unknown
+        }
+
+        var frameScores = [Double]()
+        frameScores.reserveCapacity((samples.count - window) / hop + 1)
+        var start = 0
+        while start + window <= samples.count {
+            let frame = Array(samples[start..<(start + window)])
+            frameScores.append(vocalFrameScore(frame: frame, sampleRate: sampleRate))
+            start += hop
+        }
+        guard !frameScores.isEmpty else { return .unknown }
+
+        let modulation = modulationScore(samples: samples, sampleRate: sampleRate)
+        let vocalFraction = Double(frameScores.filter { $0 > 0.5 }.count) / Double(frameScores.count)
+        let meanScore = frameScores.reduce(0, +) / Double(frameScores.count)
+        guard meanScore >= 0.05 || vocalFraction >= 0.05 else {
+            return .unknown
+        }
+        let variance = frameScores.map { ($0 - meanScore) * ($0 - meanScore) }.reduce(0, +)
+            / Double(frameScores.count)
+        let consistency = max(0, min(1, 1 - sqrt(variance)))
+
+        var rawScore = 0.40 * vocalFraction + 0.25 * meanScore + 0.10 * consistency + 0.25 * modulation
+        if modulation > 0.30 && meanScore > 0.18 {
+            rawScore = min(1, rawScore + 0.15)
+        }
+        if vocalFraction > 0.40 {
+            rawScore = min(1, rawScore + 0.10)
+        }
+        if modulation < 0.15 && vocalFraction < 0.15 {
+            rawScore = min(rawScore, 0.40)
+        }
+        rawScore = max(0, min(1, rawScore))
+
+        let guessedPresence: VocalPresence = rawScore >= 0.5 ? .vocals : .instrumental
+        let stability = max(consistency, modulation * 0.9)
+        let consistencyBoost = 0.5 + 0.5 * stability
+        var confidence = min(1, abs(rawScore - 0.5) * 2 * consistencyBoost)
+
+        // Steady harmonic pads: low modulation + high harmonicity → instrumental.
+        if modulation < 0.15, consistency > 0.7, guessedPresence == .instrumental {
+            confidence = max(confidence, vocalLabelThreshold)
+        }
+
+        guard confidence >= vocalMinimumConfidence else {
+            return VocalAnalysis(presence: .unknown, confidence: nil)
+        }
+
+        let presence: VocalPresence
+        if confidence >= vocalLabelThreshold {
+            presence = guessedPresence
+        } else if guessedPresence == .vocals, modulation > 0.35, confidence >= 0.5 {
+            presence = .vocals
+        } else {
+            presence = .unknown
+        }
+        return VocalAnalysis(presence: presence, confidence: confidence)
+    }
+
+    /// Per-frame vocal likelihood from band energy, harmonicity, and flatness.
+    private static func vocalFrameScore(frame: [Float], sampleRate: Double) -> Double {
+        let totalEnergy = frame.reduce(0.0) { $0 + Double($1 * $1) }
+        guard totalEnergy > 1e-10 else { return 0 }
+
+        var vocalEnergy = 0.0
+        for freq in stride(from: 300.0, through: 3_400.0, by: 400.0) {
+            vocalEnergy += goertzelPower(samples: frame, frequency: freq, sampleRate: sampleRate)
+        }
+        let bandRatio = min(1, vocalEnergy / totalEnergy)
+
+        let minLag = max(1, Int(sampleRate / 300.0))
+        let maxLag = min(frame.count - 1, Int(sampleRate / 80.0))
+        var harmonicity = 0.0
+        if maxLag > minLag {
+            var best = 0.0
+            for lag in minLag...maxLag {
+                var corr = 0.0
+                for index in lag..<frame.count {
+                    corr += Double(frame[index] * frame[index - lag])
+                }
+                best = max(best, corr)
+            }
+            harmonicity = min(1, best / totalEnergy)
+        }
+
+        var powers = [Double]()
+        let nyquist = sampleRate / 2
+        for freq in stride(from: 100.0, through: min(nyquist - 1, 5_000), by: 300.0) {
+            let power = goertzelPower(samples: frame, frequency: freq, sampleRate: sampleRate)
+            if power > 0 { powers.append(power) }
+        }
+        let flatness: Double
+        if powers.count >= 2 {
+            let geo = pow(powers.reduce(1, *), 1.0 / Double(powers.count))
+            let arith = powers.reduce(0, +) / Double(powers.count)
+            flatness = arith > 0 ? min(1, geo / arith) : 1
+        } else {
+            flatness = 0.5
+        }
+
+        // Penalize steady pure tones outside the vocal band (e.g. sub-bass pads).
+        let tonalPenalty = flatness < 0.12 && harmonicity > 0.6 && bandRatio < 0.35 ? 0.35 : 1.0
+        let score = (0.35 * bandRatio + 0.30 * harmonicity + 0.35 * flatness) * tonalPenalty
+        return max(0, min(1, score))
+    }
+
+    /// File-level amplitude modulation — speech and singing vary more than steady pads.
+    private static func modulationScore(samples: [Float], sampleRate: Double) -> Double {
+        let blockSize = max(1, Int(sampleRate * 0.2))
+        guard samples.count > blockSize * 4 else { return 0 }
+
+        var rmsValues = [Double]()
+        var index = 0
+        while index + blockSize <= samples.count {
+            var sum = 0.0
+            for offset in index..<(index + blockSize) {
+                sum += Double(samples[offset] * samples[offset])
+            }
+            rmsValues.append(sqrt(sum / Double(blockSize)))
+            index += blockSize
+        }
+        guard rmsValues.count >= 2 else { return 0 }
+
+        let mean = rmsValues.reduce(0, +) / Double(rmsValues.count)
+        guard mean > 1e-8 else { return 0 }
+        let variance = rmsValues.map { ($0 - mean) * ($0 - mean) }.reduce(0, +)
+            / Double(rmsValues.count)
+        return min(1, (sqrt(variance) / mean) * 2.5)
     }
 
     // MARK: - Loading
@@ -124,25 +283,32 @@ enum AudioAnalyzer {
         let maxLag = min(onset.count - 1, Int((60.0 * framesPerSecond / minBPM).rounded()))
         guard maxLag > minLag else { return nil }
 
+        let best = bestAutocorrelationLag(onset: onset, minLag: minLag, maxLag: maxLag)
+        guard best.score > 0 else { return nil }
+
+        var bpm = 60.0 * framesPerSecond / Double(best.lag)
+        // Fold octave errors into the plausible range.
+        while bpm < minBPM { bpm *= 2 }
+        while bpm > maxBPM { bpm /= 2 }
+        return Int(bpm.rounded())
+    }
+
+    private static func bestAutocorrelationLag(
+        onset: [Float], minLag: Int, maxLag: Int
+    ) -> (lag: Int, score: Float) {
         var bestLag = minLag
         var bestScore = -Float.greatestFiniteMagnitude
         for lag in minLag...maxLag {
             var score: Float = 0
-            for i in lag..<onset.count {
-                score += onset[i] * onset[i - lag]
+            for index in lag..<onset.count {
+                score += onset[index] * onset[index - lag]
             }
             if score > bestScore {
                 bestScore = score
                 bestLag = lag
             }
         }
-        guard bestScore > 0 else { return nil }
-
-        var bpm = 60.0 * framesPerSecond / Double(bestLag)
-        // Fold octave errors into the plausible range.
-        while bpm < minBPM { bpm *= 2 }
-        while bpm > maxBPM { bpm /= 2 }
-        return Int(bpm.rounded())
+        return (bestLag, bestScore)
     }
 
     // MARK: - Key
