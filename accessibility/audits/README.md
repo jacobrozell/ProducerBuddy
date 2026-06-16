@@ -15,8 +15,8 @@ Create `YYYY-MM-DD-voiceover-<scope>.md` with:
 
 | Date | Scope | Status |
 |------|-------|--------|
-| TBD | Library + import + settings sheet | ⛔ |
-| TBD | Song detail + player + waveform scrub | ⛔ |
-| TBD | Project detail + suggest order | ⛔ |
+| 2026-06-16 | Core flows (Library, Song, Player, Projects, Settings) | 🟡 automated + code review — [report](2026-06-16-voiceover-core-flows.md) |
+| TBD | Physical device VoiceOver sign-off (VO-M1–M3) | ⛔ |
+| TBD | Project detail drag reorder | ⛔ |
 
 Spec: `specs/Accessibility.md`

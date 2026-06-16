@@ -11,14 +11,15 @@ Adoption plan to bring MixStack to the same engineering bar as **Dart Buddy** an
 |------|----------------------------------|-----------------|
 | Design tokens | `Brand` + `DS` layers, README | 🟡 `Sources/DesignSystem/` |
 | Tab shell | Content tabs + settings sheet | 🟡 Library/Projects + gear sheet |
+| iPad split view | Library + Projects sidebar/detail | ✅ regular width |
 | Logging | `AppLogger` → sinks | 🟡 Console + analytics stub |
 | Analytics | Firebase allowlist (opt-in) | ⛔ Stub only; privacy-first |
 | CI split jobs | build-for-testing + test artifact | 🟡 `.github/workflows/ci.yml` |
 | Coverage artifact | informational summary, no gate | 🟡 `Scripts/ci/coverage-summary.sh` |
-| Unit + a11y tests | Swift Testing tags + contrast | 🟡 `Tests/Accessibility/` |
-| UI test matrix | Nightly parallel schemes | ⛔ |
+| Unit + a11y tests | Swift Testing tags + contrast | ✅ `MixStackCI` scheme |
+| UI test matrix | Nightly parallel schemes | ✅ split targets + nightly jobs |
 | GitHub Pages | Shared CSS, legal pages | 🟡 `docs/assets/style.css` |
-| A11y audits | Dated VoiceOver reports | 🟡 `accessibility/audits/` |
+| A11y audits | Dated VoiceOver reports | 🟡 `2026-06-16-voiceover-core-flows.md` |
 | Localization | String Catalog + parity test | ⛔ |
 | Repository layer | `any …Repository` DI | ⛔ |
 | Brand Kit | Share-surface accent | ⛔ spec only |
@@ -34,16 +35,16 @@ Adoption plan to bring MixStack to the same engineering bar as **Dart Buddy** an
 
 ## Phase 2 — Quality gates
 
-- Fix remaining SwiftLint strict issues (if any regress)
-- Integration test: seed library via launch args, relaunch asserts persistence
-- VoiceOver audit artifact for Library, Song detail, Player, Settings
-- `MixStackCI` scheme: unit + accessibility only (fast PR path)
+- Fix remaining SwiftLint strict issues (if any regress) ✅
+- Integration test: seed library via launch args, relaunch asserts persistence ✅
+- VoiceOver audit artifact for Library, Song detail, Player, Settings 🟡 automated + manual checklist
+- `MixStackCI` scheme: unit + accessibility only (fast PR path) ✅
 
 ## Phase 3 — UI test matrix
 
-- `MixStackUITestCase` with `-ui_test_reset`, `-disable_analytics`
-- Nightly workflow: smoke, library import, player, accessibility audit
-- Split UI targets in `project.yml` (mirror Dart Buddy)
+- `MixStackUITestCase` with `-ui_test_reset`, `-disable_analytics` ✅
+- Nightly workflow: smoke, library import, player, accessibility audit 🟡 smoke + landscape
+- Split UI targets in `project.yml` (mirror Dart Buddy) ✅ smoke, landscape, accessibility, iPad
 
 ## Phase 4 — Optional telemetry
 
@@ -54,7 +55,7 @@ Adoption plan to bring MixStack to the same engineering bar as **Dart Buddy** an
 ## Phase 5 — Polish & ship
 
 - String Catalog (en → es/de later)
-- iPad `NavigationSplitView` for library + detail
+- iPad `NavigationSplitView` for library + detail ✅
 - Brand Kit for share cards
 - App Store metadata + screenshots
 

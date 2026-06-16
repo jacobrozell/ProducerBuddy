@@ -22,6 +22,8 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: Sources
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
     resources:
       - path: Resources/README.md
         optional: true
@@ -35,9 +37,12 @@ targets:
     settings:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: MixStack
+        INFOPLIST_KEY_CFBundleIconName: AppIcon
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "MixStack needs access so you can record and import audio."
@@ -59,6 +64,70 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack.tests
         GENERATE_INFOPLIST_FILE: YES
 
+  MixStackUISmokeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: MixStackUITests/Support
+      - path: MixStackUITests/TabSmokeUITests.swift
+        type: file
+    dependencies:
+      - target: MixStack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack.uitests.smoke
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MixStack
+
+  MixStackUILandscapeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: MixStackUITests/Support
+      - path: MixStackUITests/LandscapeSmokeUITests.swift
+        type: file
+    dependencies:
+      - target: MixStack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack.uitests.landscape
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MixStack
+
+  MixStackUIAccessibilityUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: MixStackUITests/Support
+      - path: MixStackUITests/WCAGAccessibilityUITests.swift
+        type: file
+    dependencies:
+      - target: MixStack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack.uitests.accessibility
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MixStack
+
+  MixStackUIPadUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: MixStackUITests/Support
+      - path: MixStackUITests/IPadSplitUITests.swift
+        type: file
+    dependencies:
+      - target: MixStack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacobrozell.mixstack.uitests.ipad
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MixStack
+
 schemes:
   MixStack:
     build:
@@ -67,4 +136,72 @@ schemes:
     test:
       targets:
         - MixStackTests
+        - name: MixStackUISmokeUITests
+          parallelizable: true
+        - name: MixStackUILandscapeUITests
+          parallelizable: true
+        - name: MixStackUIAccessibilityUITests
+          parallelizable: true
+        - name: MixStackUIPadUITests
+          parallelizable: true
       gatherCoverageData: true
+
+  MixStackCI:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - MixStackTests
+      gatherCoverageData: true
+
+  MixStackUISmoke:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - name: MixStackUISmokeUITests
+          parallelizable: true
+
+  MixStackUILandscape:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - name: MixStackUILandscapeUITests
+          parallelizable: true
+
+  MixStackUIAccessibility:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - name: MixStackUIAccessibilityUITests
+          parallelizable: true
+
+  MixStackUIPad:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - name: MixStackUIPadUITests
+          parallelizable: true
+
+  MixStackUI:
+    build:
+      targets:
+        MixStack: all
+    test:
+      targets:
+        - name: MixStackUISmokeUITests
+          parallelizable: true
+        - name: MixStackUILandscapeUITests
+          parallelizable: true
+        - name: MixStackUIAccessibilityUITests
+          parallelizable: true
+        - name: MixStackUIPadUITests
+          parallelizable: true

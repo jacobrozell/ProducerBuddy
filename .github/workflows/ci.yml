@@ -11,7 +11,7 @@ concurrency:
 
 env:
   CI_XCODE_PROJECT: MixStack.xcodeproj
-  CI_XCODE_SCHEME: MixStack
+  CI_XCODE_SCHEME: MixStackCI
   SIM_DESTINATION: platform=iOS Simulator,name=iPhone 17
 
 jobs:

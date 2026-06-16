@@ -1,0 +1,138 @@
+name: Nightly UI
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI_XCODE_PROJECT: MixStack.xcodeproj
+
+jobs:
+  ui-smoke:
+    name: UI Smoke
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Run smoke UI tests
+        run: |
+          xcodebuild test \
+            -project "$CI_XCODE_PROJECT" \
+            -scheme MixStackUISmoke \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -resultBundlePath UITestResults-smoke.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results-smoke
+          path: UITestResults-smoke.xcresult
+
+  ui-landscape:
+    name: UI Landscape
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Run landscape UI tests
+        run: |
+          xcodebuild test \
+            -project "$CI_XCODE_PROJECT" \
+            -scheme MixStackUILandscape \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -resultBundlePath UITestResults-landscape.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results-landscape
+          path: UITestResults-landscape.xcresult
+
+  ui-accessibility:
+    name: UI Accessibility
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Run WCAG UI tests
+        run: |
+          xcodebuild test \
+            -project "$CI_XCODE_PROJECT" \
+            -scheme MixStackUIAccessibility \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -resultBundlePath UITestResults-accessibility.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results-accessibility
+          path: UITestResults-accessibility.xcresult
+
+  ui-ipad:
+    name: UI iPad Split
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Run iPad split UI tests
+        run: |
+          xcodebuild test \
+            -project "$CI_XCODE_PROJECT" \
+            -scheme MixStackUIPad \
+            -destination "platform=iOS Simulator,name=iPad (A16)" \
+            -resultBundlePath UITestResults-ipad.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results-ipad
+          path: UITestResults-ipad.xcresult
