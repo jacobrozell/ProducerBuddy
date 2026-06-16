@@ -35,7 +35,7 @@ Status legend: ✅ shipped · 🟡 partial · 🧪 unverified (not yet built/run
 | Platform | Accessibility pass (labels, Reduce Motion) | 🟡 | 🧪 | across views, `A11yID` |
 | Platform | Localization | ⛔ | — | strings hard-coded (en only) |
 | Platform | iCloud sync | ⛔ | — | — |
-| Platform | Onboarding / first-run | ⛔ | — | — |
+| Platform | Onboarding / first-run | ✅ | 🧪 | `OnboardingView`, `RootView` |
 | Platform | Repository layer / DI container | ⛔ | — | views use `modelContext` directly |
 | Platform | Schema versioning / migration | ⛔ | — | single implicit schema |
 | Platform | UI tests / CI green | ⛔ | — | unit tests only; CI added, unverified |

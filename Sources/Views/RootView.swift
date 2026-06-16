@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(AudioPlayer.self) private var audioPlayer
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: AppAppearance = .system
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         TabView {
@@ -31,5 +32,16 @@ struct RootView: View {
         // Respect Reduce Motion: skip the slide animation when requested.
         .animation(reduceMotion ? nil : .snappy, value: audioPlayer.currentMix?.id)
         .preferredColorScheme(appearance.colorScheme)
+        .fullScreenCover(isPresented: showOnboarding) {
+            OnboardingView { hasCompletedOnboarding = true }
+        }
+    }
+
+    /// Drives the first-run cover; dismissing marks onboarding complete.
+    private var showOnboarding: Binding<Bool> {
+        Binding(
+            get: { !hasCompletedOnboarding },
+            set: { presented in if !presented { hasCompletedOnboarding = true } }
+        )
     }
 }

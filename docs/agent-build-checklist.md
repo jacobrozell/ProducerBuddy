@@ -15,7 +15,7 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 | 2 | Design system & a11y foundations | 🟡 | Reduce Motion, theme picker, non-color cues ✅. Token layers, contrast tracking, `Tests/Accessibility/` ⛔. |
 | 3 | Domain layer (test-first) | ✅ | `SequencingEngine`, `AudioAnalyzer`, `WaveformGenerator` pure + unit-tested. Typed errors / command pattern ⛔. |
 | 4 | Persistence & repositories | 🟡 | SwiftData models + container ✅. Repository protocols, DI container, versioned schema/migration ⛔. |
-| 5 | App shell & navigation | 🟡 | `@main`, TabView, now-playing chrome, release-surface gate ✅. Router/deep links, onboarding ⛔. |
+| 5 | App shell & navigation | 🟡 | `@main`, TabView, now-playing chrome, release-surface gate, first-run onboarding ✅. Router/deep links ⛔. |
 | 6 | First vertical slice | ✅ | Import → library → detail → project → sequence → share works end-to-end. Integration/relaunch test ⛔. |
 | 7 | Shared chrome & adaptive layout | 🟡 | Empty states, banners, badges ✅. Orientation/idiom logic, iPad layout ⛔. |
 | 8 | Entity mgmt & settings | 🟡 | CRUD ✅. Settings + AppLinks + delete-all ✅. Tip jar wired (nil = hidden). |
@@ -38,7 +38,8 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 3. **Manual accessibility audit (11)** — VoiceOver pass on the 5 core screens;
    fill the screen tracker in `specs/Accessibility.md`.
 4. **Repository layer (4)** — introduce `any …Repository` to isolate SwiftData.
-5. **Onboarding + GitHub Pages enablement (5, 15)** — first-run + hosted URLs live.
+5. **GitHub Pages enablement (15)** — turn on Pages from `/docs` so the legal
+   URLs in `AppLinks` resolve.
 
 ## Progress log
 
@@ -53,3 +54,4 @@ Legend: ✅ done · 🟡 partial · ⛔ not started · ⚪ N/A (pre-v1)
 | 2026-06-16 | Automatic BPM & key detection | |
 | 2026-06-16 | Waveforms (cache + Canvas + scrubber) | |
 | 2026-06-16 | Phase 0/1/2/8/11/13/15 scaffolding: infra, specs, legal pages, Settings, a11y pass | |
+| 2026-06-16 | Phase 5: first-run onboarding (replayable from Settings) | |

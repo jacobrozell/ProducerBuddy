@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     @AppStorage("appearance") private var appearance: AppAppearance = .system
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @Query private var songs: [Song]
     @Query private var projects: [Project]
@@ -59,6 +60,11 @@ struct SettingsView: View {
                     Label("Leave a Tip", systemImage: "cup.and.saucer")
                 }
                 .accessibilityIdentifier(A11yID.Settings.tipJar)
+            }
+            Button {
+                hasCompletedOnboarding = false
+            } label: {
+                Label("Show Intro Again", systemImage: "sparkles")
             }
             LabeledContent("Version", value: appVersion)
         }
