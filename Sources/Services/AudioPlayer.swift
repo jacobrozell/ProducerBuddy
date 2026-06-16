@@ -13,6 +13,11 @@ final class AudioPlayer: NSObject {
     private(set) var isPlaying = false
     private(set) var currentTime: Double = 0
     private(set) var duration: Double = 0
+    /// When true the current mix repeats on completion — handy for A/B'ing a
+    /// section of a track on loop.
+    var isLooping = false {
+        didSet { player?.numberOfLoops = isLooping ? -1 : 0 }
+    }
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
@@ -34,6 +39,7 @@ final class AudioPlayer: NSObject {
             self.player = player
             self.currentMix = mix
             self.duration = player.duration
+            player.numberOfLoops = isLooping ? -1 : 0
             player.play()
             isPlaying = true
             startTimer()
@@ -58,6 +64,24 @@ final class AudioPlayer: NSObject {
         guard let player else { return }
         player.currentTime = max(0, min(time, player.duration))
         currentTime = player.currentTime
+    }
+
+    /// Jumps forward (positive) or backward (negative) by `seconds`, clamped to
+    /// the track bounds.
+    func skip(by seconds: Double) {
+        guard let player else { return }
+        seek(to: player.currentTime + seconds)
+    }
+
+    /// Swaps to a different mix while keeping the current playback position and
+    /// play/pause state — the core of A/B comparing two versions of a song.
+    func switchMix(to mix: Mix) {
+        guard mix.id != currentMix?.id else { return }
+        let resumeTime = currentTime
+        let wasPlaying = isPlaying
+        play(mix)
+        seek(to: resumeTime)
+        if !wasPlaying { togglePlayPause() }
     }
 
     func stop() {

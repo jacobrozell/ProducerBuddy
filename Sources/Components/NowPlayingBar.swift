@@ -4,6 +4,7 @@ import SwiftUI
 /// progress region scrubs; the button toggles play/pause.
 struct NowPlayingBar: View {
     @Environment(AudioPlayer.self) private var audioPlayer
+    @State private var showingFullPlayer = false
 
     var body: some View {
         VStack(spacing: 6) {
@@ -36,6 +37,7 @@ struct NowPlayingBar: View {
                     Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
                 }
+                .buttonStyle(.plain)
 
                 Button {
                     audioPlayer.stop()
@@ -44,11 +46,18 @@ struct NowPlayingBar: View {
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
+                .buttonStyle(.plain)
             }
+            // Tapping the row (but not the buttons) expands the full player.
+            .contentShape(Rectangle())
+            .onTapGesture { showingFullPlayer = true }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)
+        .sheet(isPresented: $showingFullPlayer) {
+            FullPlayerView()
+        }
     }
 
     private var progress: Double {

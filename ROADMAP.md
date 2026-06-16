@@ -158,8 +158,15 @@ The things that make people keep their catalog in the app long-term.
 
 A rough order that delivers visible value early and builds toward the vision:
 
-1. **Import-first flow + embedded metadata** — removes the biggest daily friction.
-2. **Full-screen player with scrubbing + A/B mix compare** — core listening loop.
+1. ~~**Import-first flow + embedded metadata**~~ — ✅ shipped. The Library's
+   "Import Audio…" action ingests multiple files at once, creating a song +
+   primary "Original" mix each, with title/artist pulled from embedded tags
+   (falling back to the filename).
+2. ~~**Full-screen player with scrubbing + A/B mix compare**~~ — ✅ shipped.
+   Tap the now-playing bar for a full player with a draggable scrubber, ±15s
+   skip, a loop toggle, and a segmented A/B control that swaps mixes without
+   losing position. *(Still open: looping a chosen section rather than the whole
+   track.)*
 3. **Visual release cards (`ImageRenderer`)** — closes the brief's headline gap.
 4. **Energy curve graph + badge explanations** — makes sequencing legible.
 5. **Background audio + project playback** — makes it a real listening app.

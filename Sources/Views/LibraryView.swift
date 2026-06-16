@@ -21,6 +21,9 @@ struct LibraryView: View {
     @State private var sort: LibrarySort = .dateAdded
     @State private var categoryFilter: SongCategory?
     @State private var showingNewSong = false
+    @State private var showingImporter = false
+    /// Count of songs from the most recent import, surfaced as a brief banner.
+    @State private var lastImportCount = 0
 
     var body: some View {
         NavigationStack {
@@ -38,8 +41,13 @@ struct LibraryView: View {
                     sortMenu
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingNewSong = true
+                    Menu {
+                        Button("Import Audio…", systemImage: "square.and.arrow.down") {
+                            showingImporter = true
+                        }
+                        Button("New Song", systemImage: "square.and.pencil") {
+                            showingNewSong = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -48,6 +56,14 @@ struct LibraryView: View {
             .safeAreaInset(edge: .top) { categoryFilterBar }
             .sheet(isPresented: $showingNewSong) {
                 SongEditorView(song: nil)
+            }
+            .songImporter(isPresented: $showingImporter) { results in
+                importSongs(results)
+            }
+            .overlay(alignment: .bottom) {
+                if lastImportCount > 0 {
+                    importBanner
+                }
             }
         }
     }
@@ -100,11 +116,50 @@ struct LibraryView: View {
         ContentUnavailableView {
             Label("No Songs Yet", systemImage: "music.note")
         } description: {
-            Text("Add your first track and start building your catalog.")
+            Text("Import audio straight from your DAW or Files, and start building your catalog.")
         } actions: {
-            Button("Add Song") { showingNewSong = true }
+            Button("Import Audio") { showingImporter = true }
                 .buttonStyle(.borderedProminent)
+            Button("Add Manually") { showingNewSong = true }
         }
+    }
+
+    /// Transient confirmation shown after an import; clears itself after a beat.
+    private var importBanner: some View {
+        Label(
+            "Imported \(lastImportCount) song\(lastImportCount == 1 ? "" : "s")",
+            systemImage: "checkmark.circle.fill"
+        )
+        .font(.subheadline.weight(.semibold))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: Capsule())
+        .foregroundStyle(.green)
+        .padding(.bottom, 12)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: lastImportCount) {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation { lastImportCount = 0 }
+        }
+    }
+
+    /// Creates one song (with a primary mix) per imported file, pre-filling the
+    /// title/artist from embedded tags or the filename.
+    private func importSongs(_ results: [ImportedAudio]) {
+        for audio in results {
+            let song = Song(title: audio.suggestedTitle, artist: audio.artist ?? "")
+            modelContext.insert(song)
+
+            let mix = Mix(
+                name: "Original",
+                fileName: audio.fileName,
+                duration: audio.duration,
+                isPrimary: true
+            )
+            mix.song = song
+            modelContext.insert(mix)
+        }
+        withAnimation { lastImportCount = results.count }
     }
 
     /// Search + category filter, then sort.
