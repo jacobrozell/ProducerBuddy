@@ -15,6 +15,15 @@ Package.resolved
 # macOS
 .DS_Store
 
+# Agent tooling (ios-simulator MCP screenshots, etc.)
+tmp/
+
+# Personal demo audio (keep Resources/README.md)
+Resources/*.mp3
+Resources/*.wav
+Resources/*.m4a
+Resources/*.aiff
+
 # Misc
 *.moved-aside
 *.pbxuser

@@ -1,0 +1,8 @@
+schemaVersion: 1
+sessionDefaults:
+  projectPath: /Users/jrozell/Desktop/personal/MixStack/MixStack.xcodeproj
+  scheme: MixStack
+  simulatorName: MixStack
+  simulatorId: B9B740EB-0476-4232-BEDC-3A8E8A3D4D54
+  simulatorPlatform: iOS Simulator
+  bundleId: com.jacobrozell.mixstack
