@@ -84,6 +84,17 @@ enum SequencingEngine {
         return results
     }
 
+    /// The index of the highest-BPM (peak-energy) track, or nil when empty. On
+    /// ties the earliest peak wins, matching the "build to the first crest" read.
+    static func peakIndex(bpms: [Int]) -> Int? {
+        guard !bpms.isEmpty else { return nil }
+        var best = 0
+        for index in bpms.indices where bpms[index] > bpms[best] {
+            best = index
+        }
+        return best
+    }
+
     /// Suggests a running order that builds energy gradually then eases off — a
     /// common album arc. Tracks are sorted by BPM ascending, then the top
     /// third (highest energy) is appended in descending order so the record

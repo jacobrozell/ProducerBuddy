@@ -15,6 +15,7 @@ struct ProjectDetailView: View {
     var body: some View {
         List {
             summarySection
+            energySection
             tracksSection
         }
         .navigationTitle(project.title)
@@ -61,6 +62,32 @@ struct ProjectDetailView: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    /// The BPM-over-tracklist chart. Hidden until there are at least two tracks
+    /// to draw a meaningful curve.
+    @ViewBuilder
+    private var energySection: some View {
+        if energyPoints.count >= 2 {
+            Section("Energy Flow") {
+                EnergyCurveChart(points: energyPoints)
+                    .padding(.vertical, 4)
+                FlowLegend()
+            }
+        }
+    }
+
+    /// Plot points for the energy curve, built from the current running order.
+    private var energyPoints: [EnergyPoint] {
+        orderedTracks.compactMap { track in
+            guard let song = track.song else { return nil }
+            return EnergyPoint(
+                id: track.id,
+                position: track.position + 1,
+                title: song.title,
+                bpm: song.bpm
+            )
         }
     }
 

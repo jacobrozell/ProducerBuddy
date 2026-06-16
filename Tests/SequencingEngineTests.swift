@@ -78,4 +78,19 @@ struct SequencingEngineTests {
         let songs = [(id: 1, bpm: 100), (id: 2, bpm: 130)]
         #expect(SequencingEngine.suggestOrder(for: songs) == [1, 2])
     }
+
+    @Test("Peak index points at the highest-BPM track")
+    func peakIndexFindsMax() {
+        #expect(SequencingEngine.peakIndex(bpms: [100, 140, 120]) == 1)
+    }
+
+    @Test("Peak index returns the earliest track on a tie")
+    func peakIndexEarliestOnTie() {
+        #expect(SequencingEngine.peakIndex(bpms: [130, 110, 130]) == 0)
+    }
+
+    @Test("Peak index of an empty tracklist is nil")
+    func peakIndexEmpty() {
+        #expect(SequencingEngine.peakIndex(bpms: []) == nil)
+    }
 }

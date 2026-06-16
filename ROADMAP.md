@@ -51,13 +51,13 @@ each and don't need new data models.
 - **Haptics** on play/pause, primary-mix toggle, and reorder drops.
 
 ### Sequencing clarity
-- **Explain the badges.** Add an info popover on the Rise/Fall/Steady badges and
-  a one-line legend on the project screen so a new user understands what the
-  app is telling them.
-- **Energy curve graph.** Render the project's BPM-over-tracklist as a small
-  Swift Charts line above the running order. Seeing the *shape* of the record
-  (the rise to a peak, the wind-down) is far more intuitive than per-row badges
-  alone.
+- ✅ **Energy curve graph.** *(Shipped.)* The project's BPM-over-tracklist is
+  drawn as a Swift Charts area/line above the running order with the peak track
+  marked — seeing the *shape* of the record (the rise to a peak, the wind-down)
+  is far more intuitive than per-row badges alone.
+- ✅ **Explain the badges.** *(Shipped.)* A `FlowLegend` under the chart keys the
+  Rise/Fall/Steady badges and the abrupt-jump warning. *Still open:* a tap-to-
+  explain popover on each individual badge.
 - **Diff preview for "Suggest Order."** Before committing the auto-sequence,
   show what's moving where and let the user accept or undo, rather than
   silently rewriting their order.
@@ -171,7 +171,9 @@ A rough order that delivers visible value early and builds toward the vision:
    detail screens have a "Share Card" action that renders a polished, on-brand
    image (square or story format) to a PNG and shares it via the system sheet.
    *(Still open: brand kit, audiograms, banner preset, pre-save page.)*
-4. **Energy curve graph + badge explanations** — makes sequencing legible.
+4. ~~**Energy curve graph + badge explanations**~~ — ✅ shipped. The project
+   screen plots BPM across the running order with Swift Charts, marks the peak,
+   and shows a legend explaining the Rise/Fall/Steady badges.
 5. ~~**Background audio + lock-screen controls**~~ — ✅ shipped. Playback
    continues in the background (audio background mode) and the lock screen /
    Control Center show metadata with working play, pause, ±15s, and scrub.
