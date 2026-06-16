@@ -1,0 +1,28 @@
+import SwiftUI
+import SwiftData
+
+@main
+struct ProducerBuddyApp: App {
+    /// Shared SwiftData container for the whole app.
+    let modelContainer: ModelContainer
+
+    @State private var audioPlayer = AudioPlayer()
+
+    init() {
+        do {
+            modelContainer = try ModelContainer(
+                for: Song.self, Mix.self, Project.self, ProjectTrack.self
+            )
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+                .environment(audioPlayer)
+        }
+        .modelContainer(modelContainer)
+    }
+}

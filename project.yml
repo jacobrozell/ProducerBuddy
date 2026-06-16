@@ -1,0 +1,59 @@
+name: ProducerBuddy
+options:
+  bundleIdPrefix: com.producerbuddy
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  ProducerBuddy:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Sources
+      - path: Resources
+        optional: true
+    settings:
+      base:
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        PRODUCT_BUNDLE_IDENTIFIER: com.producerbuddy.app
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "ProducerBuddy needs access so you can record and import audio."
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+
+  ProducerBuddyTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: ProducerBuddy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.producerbuddy.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  ProducerBuddy:
+    build:
+      targets:
+        ProducerBuddy: all
+    test:
+      targets:
+        - ProducerBuddyTests
+      gatherCoverageData: true
