@@ -11,6 +11,47 @@ enum MusicalKey: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// Position on the Camelot wheel used for harmonic-mixing compatibility.
+    /// `number` is 1–12 and `isMajor` distinguishes the B (major) ring from the
+    /// A (minor) ring. `nil` for `.unknown`.
+    var camelot: (number: Int, isMajor: Bool)? {
+        switch self {
+        case .unknown: return nil
+        // Major ring (B)
+        case .cMajor: return (8, true)
+        case .gMajor: return (9, true)
+        case .dMajor: return (10, true)
+        case .aMajor: return (11, true)
+        case .eMajor: return (12, true)
+        case .bMajor: return (1, true)
+        case .fSharpMajor: return (2, true)
+        case .dFlatMajor: return (3, true)
+        case .aFlatMajor: return (4, true)
+        case .eFlatMajor: return (5, true)
+        case .bFlatMajor: return (6, true)
+        case .fMajor: return (7, true)
+        // Minor ring (A)
+        case .aMinor: return (8, false)
+        case .eMinor: return (9, false)
+        case .bMinor: return (10, false)
+        case .fSharpMinor: return (11, false)
+        case .cSharpMinor: return (12, false)
+        case .gSharpMinor: return (1, false)
+        case .dSharpMinor: return (2, false)
+        case .bFlatMinor: return (3, false)
+        case .fMinor: return (4, false)
+        case .cMinor: return (5, false)
+        case .gMinor: return (6, false)
+        case .dMinor: return (7, false)
+        }
+    }
+
+    /// Short Camelot code (e.g. "8A", "11B"), or nil when unknown.
+    var camelotCode: String? {
+        guard let c = camelot else { return nil }
+        return "\(c.number)\(c.isMajor ? "B" : "A")"
+    }
+
     var displayName: String {
         switch self {
         case .unknown: return "—"

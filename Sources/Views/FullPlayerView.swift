@@ -122,17 +122,37 @@ struct FullPlayerView: View {
         }
     }
 
+    /// True when a project queue is loaded, enabling prev/next instead of just
+    /// the ±15s skip controls.
+    private var hasQueue: Bool { !audioPlayer.queue.isEmpty }
+
     private var transport: some View {
-        HStack(spacing: 44) {
-            Button { audioPlayer.skip(by: -15) } label: {
-                Image(systemName: "gobackward.15")
+        HStack(spacing: 36) {
+            if hasQueue {
+                Button { audioPlayer.playPrevious() } label: {
+                    Image(systemName: "backward.fill")
+                }
+                .disabled(!audioPlayer.hasPrevious)
+            } else {
+                Button { audioPlayer.skip(by: -15) } label: {
+                    Image(systemName: "gobackward.15")
+                }
             }
+
             Button { audioPlayer.togglePlayPause() } label: {
                 Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 64))
             }
-            Button { audioPlayer.skip(by: 15) } label: {
-                Image(systemName: "goforward.15")
+
+            if hasQueue {
+                Button { audioPlayer.playNext() } label: {
+                    Image(systemName: "forward.fill")
+                }
+                .disabled(!audioPlayer.hasNext)
+            } else {
+                Button { audioPlayer.skip(by: 15) } label: {
+                    Image(systemName: "goforward.15")
+                }
             }
         }
         .font(.title)

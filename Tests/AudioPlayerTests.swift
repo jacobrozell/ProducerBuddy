@@ -42,4 +42,48 @@ struct AudioPlayerTests {
         #expect(player.currentMix == nil)
         #expect(player.isPlaying == false)
     }
+
+    @Test("Queuing mixes sets up next/previous availability")
+    func queueTracksNavigation() {
+        let player = AudioPlayer()
+        let mixes = [
+            Mix(name: "A", fileName: "a.m4a"),
+            Mix(name: "B", fileName: "b.m4a"),
+            Mix(name: "C", fileName: "c.m4a")
+        ]
+        player.playQueue(mixes)
+        #expect(player.queue.count == 3)
+        #expect(player.queueIndex == 0)
+        #expect(player.hasPrevious == false)
+        #expect(player.hasNext)
+    }
+
+    @Test("playNext and playPrevious move through the queue")
+    func queueAdvance() {
+        let player = AudioPlayer()
+        let mixes = [Mix(name: "A", fileName: "a.m4a"), Mix(name: "B", fileName: "b.m4a")]
+        player.playQueue(mixes)
+        player.playNext()
+        #expect(player.queueIndex == 1)
+        #expect(player.hasNext == false)
+        player.playPrevious()
+        #expect(player.queueIndex == 0)
+    }
+
+    @Test("Empty queue is rejected")
+    func emptyQueueIgnored() {
+        let player = AudioPlayer()
+        player.playQueue([])
+        #expect(player.queue.isEmpty)
+        #expect(player.hasNext == false)
+    }
+
+    @Test("Stop clears the queue")
+    func stopClearsQueue() {
+        let player = AudioPlayer()
+        player.playQueue([Mix(name: "A", fileName: "a.m4a"), Mix(name: "B", fileName: "b.m4a")])
+        player.stop()
+        #expect(player.queue.isEmpty)
+        #expect(player.queueIndex == 0)
+    }
 }

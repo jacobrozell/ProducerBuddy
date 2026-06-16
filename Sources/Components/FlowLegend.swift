@@ -14,6 +14,8 @@ struct FlowLegend: View {
                 Label("Abrupt BPM jump", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
+            Label("Key clash with previous track (Camelot)", systemImage: "music.note")
+                .foregroundStyle(.orange)
         }
         .font(.caption2)
         .foregroundStyle(.secondary)

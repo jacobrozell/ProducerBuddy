@@ -24,10 +24,13 @@ ProducerBuddy follows a producer's workflow from raw idea to release:
   and design the running order.
 - **Sequencing engine** — For each track the app reports an energy **Rise**,
   **Fall**, or **Steady** move relative to the previous track (using BPM as an
-  energy proxy), and warns about abrupt BPM jumps. "Suggest Order" arranges the
-  record to build energy and peak before the wind-down. An **energy-flow chart**
-  (Swift Charts) plots BPM across the running order and marks the peak track, so
-  you can see the *shape* of the record at a glance.
+  energy proxy), warns about abrupt BPM jumps, and flags **harmonic key clashes**
+  between neighbours using the Camelot wheel. "Suggest Order" arranges the record
+  to build energy and peak before the wind-down. An **energy-flow chart** (Swift
+  Charts) plots BPM across the running order and marks the peak track, so you can
+  see the *shape* of the record at a glance.
+- **Project playback** — "Play in Order" plays a whole project as an
+  auto-advancing queue, with prev/next in the full player and on the lock screen.
 - **Visual sharing** — Generate a clean, on-brand **release card** image (square
   or story format) for any song or project via `ImageRenderer`, or share a text
   blurb / tracklist — all through the system share sheet.

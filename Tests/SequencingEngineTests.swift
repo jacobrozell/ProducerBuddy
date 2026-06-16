@@ -93,4 +93,55 @@ struct SequencingEngineTests {
     func peakIndexEmpty() {
         #expect(SequencingEngine.peakIndex(bpms: []) == nil)
     }
+
+    // MARK: Harmonic mixing
+
+    @Test("A key is compatible with itself")
+    func sameKeyCompatible() {
+        #expect(SequencingEngine.areHarmonicallyCompatible(.aMinor, .aMinor))
+    }
+
+    @Test("Relative major/minor are compatible (same Camelot number)")
+    func relativeKeysCompatible() {
+        // A minor (8A) ↔ C major (8B)
+        #expect(SequencingEngine.areHarmonicallyCompatible(.aMinor, .cMajor))
+    }
+
+    @Test("Adjacent keys on the same ring are compatible")
+    func adjacentRingCompatible() {
+        // A minor (8A) ↔ E minor (9A)
+        #expect(SequencingEngine.areHarmonicallyCompatible(.aMinor, .eMinor))
+    }
+
+    @Test("Compatibility wraps around the wheel (12 ↔ 1)")
+    func ringWrapsAround() {
+        // G♯ minor (1A) ↔ C♯ minor (12A)
+        #expect(SequencingEngine.areHarmonicallyCompatible(.gSharpMinor, .cSharpMinor))
+    }
+
+    @Test("Distant keys clash")
+    func distantKeysClash() {
+        // C major (8B) ↔ D major (10B) is two steps apart
+        #expect(SequencingEngine.areHarmonicallyCompatible(.cMajor, .dMajor) == false)
+    }
+
+    @Test("Unknown keys never clash")
+    func unknownNeverClashes() {
+        #expect(SequencingEngine.areHarmonicallyCompatible(.unknown, .dMajor))
+        #expect(SequencingEngine.areHarmonicallyCompatible(.cMajor, .unknown))
+    }
+
+    @Test("Key-aware analysis flags a clash on the offending track")
+    func analysisFlagsKeyClash() {
+        let result = SequencingEngine.analyze(bpms: [120, 122], keys: [.cMajor, .dMajor])
+        #expect(result[0].keyClash == false) // opener
+        #expect(result[1].keyClash)
+        #expect(result[1].keyText != nil)
+    }
+
+    @Test("Key-aware analysis stays clear when keys are compatible")
+    func analysisNoClashWhenCompatible() {
+        let result = SequencingEngine.analyze(bpms: [120, 121], keys: [.aMinor, .cMajor])
+        #expect(result[1].keyClash == false)
+    }
 }

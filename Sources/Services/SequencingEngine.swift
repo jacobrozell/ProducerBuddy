@@ -33,9 +33,32 @@ struct FlowAnalysis: Identifiable, Sendable {
     let id: UUID
     let move: EnergyMove
     let bpmDelta: Int
-    /// True when an adjacent track is a jarringly large BPM jump or a key clash.
+    /// True when this track is a jarringly large BPM jump from the previous one.
     let hasWarning: Bool
     let warningText: String?
+    /// True when this track's key is not harmonically compatible with the
+    /// previous track's (both keys known). Compatible neighbours make for
+    /// smoother transitions; a clash is a heads-up, not a hard error.
+    let keyClash: Bool
+    let keyText: String?
+
+    init(
+        id: UUID = UUID(),
+        move: EnergyMove,
+        bpmDelta: Int,
+        hasWarning: Bool,
+        warningText: String?,
+        keyClash: Bool = false,
+        keyText: String? = nil
+    ) {
+        self.id = id
+        self.move = move
+        self.bpmDelta = bpmDelta
+        self.hasWarning = hasWarning
+        self.warningText = warningText
+        self.keyClash = keyClash
+        self.keyText = keyText
+    }
 }
 
 /// Pure, dependency-free logic for analysing and suggesting album/EP track
@@ -82,6 +105,47 @@ enum SequencingEngine {
         }
 
         return results
+    }
+
+    /// Like `analyze(bpms:)` but also flags harmonic key clashes between
+    /// neighbouring tracks. `keys` must line up with `bpms` by index.
+    static func analyze(bpms: [Int], keys: [MusicalKey]) -> [FlowAnalysis] {
+        let base = analyze(bpms: bpms)
+        return base.enumerated().map { index, analysis in
+            guard index > 0 else { return analysis }
+            let previous = keys[index - 1]
+            let current = keys[index]
+            // Only judge when both keys are known.
+            guard previous != .unknown, current != .unknown else { return analysis }
+
+            let compatible = areHarmonicallyCompatible(previous, current)
+            let text = compatible
+                ? nil
+                : "Key clash: \(previous.camelotCode ?? previous.displayName) → \(current.camelotCode ?? current.displayName)"
+
+            return FlowAnalysis(
+                id: analysis.id,
+                move: analysis.move,
+                bpmDelta: analysis.bpmDelta,
+                hasWarning: analysis.hasWarning,
+                warningText: analysis.warningText,
+                keyClash: !compatible,
+                keyText: text
+            )
+        }
+    }
+
+    /// Whether two keys mix smoothly under the Camelot wheel rules: same key,
+    /// the relative major/minor (same number, opposite ring), or an adjacent
+    /// number on the same ring (±1, wrapping 12↔1). Unknown keys never clash.
+    static func areHarmonicallyCompatible(_ a: MusicalKey, _ b: MusicalKey) -> Bool {
+        guard let ca = a.camelot, let cb = b.camelot else { return true }
+        if ca.number == cb.number { return true } // same code or relative maj/min
+        if ca.isMajor == cb.isMajor {
+            let diff = abs(ca.number - cb.number)
+            return diff == 1 || diff == 11 // neighbour on the ring, with wrap
+        }
+        return false
     }
 
     /// The index of the highest-BPM (peak-energy) track, or nil when empty. On

@@ -7,6 +7,7 @@ import SwiftData
 struct ProjectDetailView: View {
     @Bindable var project: Project
     @Environment(\.modelContext) private var modelContext
+    @Environment(AudioPlayer.self) private var audioPlayer
 
     @State private var showingEditor = false
     @State private var showingAddTracks = false
@@ -22,7 +23,17 @@ struct ProjectDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    playProject()
+                } label: {
+                    Image(systemName: "play.fill")
+                }
+                .disabled(playableMixes.isEmpty)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Button("Play in Order", systemImage: "play.fill") { playProject() }
+                        .disabled(playableMixes.isEmpty)
                     Button("Add Tracks", systemImage: "plus") { showingAddTracks = true }
                     Button("Suggest Order", systemImage: "wand.and.stars") { suggestOrder() }
                         .disabled(project.tracks.count < 3)
@@ -124,9 +135,22 @@ struct ProjectDetailView: View {
         project.orderedTracks
     }
 
-    /// Flow analysis for the current order, computed from each song's BPM.
+    /// Primary mixes for the running order, skipping tracks that have no audio.
+    private var playableMixes: [Mix] {
+        orderedTracks.compactMap { $0.song?.primaryMix }
+    }
+
+    /// Plays the project's tracks in running order as an auto-advancing queue.
+    private func playProject() {
+        audioPlayer.playQueue(playableMixes)
+    }
+
+    /// Flow analysis for the current order, from each song's BPM and key.
     private var flow: [FlowAnalysis] {
-        SequencingEngine.analyze(bpms: orderedTracks.map { $0.song?.bpm ?? 0 })
+        SequencingEngine.analyze(
+            bpms: orderedTracks.map { $0.song?.bpm ?? 0 },
+            keys: orderedTracks.map { $0.song?.key ?? .unknown }
+        )
     }
 
     private var runtime: String {

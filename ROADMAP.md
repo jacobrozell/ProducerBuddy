@@ -98,9 +98,10 @@ this is the biggest gap between the build and the vision.
 
 Deepen the feature that makes this app more than a file manager.
 
-- **Harmonic mixing (Camelot wheel).** Factor musical key into flow analysis and
-  warn on key clashes between adjacent tracks; suggest harmonically compatible
-  neighbors. The `MusicalKey` enum is already in place to build on.
+- ✅ **Harmonic mixing (Camelot wheel).** *(Shipped.)* Each key maps to a Camelot
+  code; the flow analysis flags key clashes between adjacent tracks (a 🎵 marker
+  plus a legend entry), and the running order shows each track's code. *Still
+  open:* actively *suggesting* harmonically compatible neighbours.
 - **Multi-signal energy model.** Blend BPM with rating, song duration, and an
   optional manual "energy" tag instead of using BPM alone as the proxy.
 - **Multiple arc templates.** Beyond the single build-to-peak suggestion, offer
@@ -140,8 +141,9 @@ The things that make people keep their catalog in the app long-term.
 - ✅ **Background audio + lock-screen controls.** *(Shipped.)*
   `MPNowPlayingInfoCenter` + `MPRemoteCommandCenter` are wired up and the `audio`
   background mode keeps playback running when backgrounded.
-- **Queue & project playback.** Play a whole project in running order with
-  auto-advance, instead of one mix at a time.
+- ✅ **Queue & project playback.** *(Shipped.)* "Play in Order" plays a whole
+  project as an auto-advancing queue, with prev/next in the full player and on
+  the lock screen.
 - **iCloud sync & backup.** Move the SwiftData store to CloudKit so a catalog
   survives device loss and syncs iPad↔iPhone. Audio files sync via iCloud
   Documents.
@@ -174,11 +176,13 @@ A rough order that delivers visible value early and builds toward the vision:
 4. ~~**Energy curve graph + badge explanations**~~ — ✅ shipped. The project
    screen plots BPM across the running order with Swift Charts, marks the peak,
    and shows a legend explaining the Rise/Fall/Steady badges.
-5. ~~**Background audio + lock-screen controls**~~ — ✅ shipped. Playback
-   continues in the background (audio background mode) and the lock screen /
-   Control Center show metadata with working play, pause, ±15s, and scrub.
-   *(Still open: a project play queue with auto-advance.)*
-6. **Harmonic mixing + arc templates** — deepens the differentiator.
+5. ~~**Background audio + lock-screen controls + project queue**~~ — ✅ shipped.
+   Playback continues in the background; the lock screen / Control Center show
+   metadata with working play, pause, ±15s, scrub, and prev/next; and "Play in
+   Order" plays a project as an auto-advancing queue.
+6. ~~**Harmonic mixing (Camelot wheel)**~~ — ✅ shipped. Key-aware flow analysis
+   flags clashes between adjacent tracks. *(Still open: arc templates and
+   actively suggesting compatible neighbours.)*
 7. **iCloud sync** — makes it trustworthy for a real catalog.
 8. **Waveforms + auto BPM/key** — unlocks audiograms and reduces manual entry.
 

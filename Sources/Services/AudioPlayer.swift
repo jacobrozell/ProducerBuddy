@@ -25,14 +25,52 @@ final class AudioPlayer: NSObject {
     /// Ensures the lock-screen remote commands are only registered once.
     private var remoteCommandsConfigured = false
 
-    /// Loads and begins playing a mix. Re-tapping the same mix toggles pause.
+    /// The current playback queue (e.g. a project's running order) and the index
+    /// of the playing track within it. Empty for one-off single-mix playback.
+    private(set) var queue: [Mix] = []
+    private(set) var queueIndex = 0
+
+    var hasNext: Bool { queueIndex + 1 < queue.count }
+    var hasPrevious: Bool { queueIndex > 0 }
+
+    /// Plays a single mix, clearing any active queue. Re-tapping the same mix
+    /// toggles pause.
     func play(_ mix: Mix) {
         if currentMix?.id == mix.id, player != nil {
             togglePlayPause()
             return
         }
+        queue = []
+        queueIndex = 0
+        start(mix)
+    }
 
-        stop()
+    /// Plays an ordered list of mixes as a queue, auto-advancing on completion —
+    /// used to listen through a project in its running order.
+    func playQueue(_ mixes: [Mix], startAt index: Int = 0) {
+        guard !mixes.isEmpty, mixes.indices.contains(index) else { return }
+        queue = mixes
+        queueIndex = index
+        start(mixes[index])
+    }
+
+    /// Advances to the next queued track, if any.
+    func playNext() {
+        guard hasNext else { return }
+        queueIndex += 1
+        start(queue[queueIndex])
+    }
+
+    /// Returns to the previous queued track, if any.
+    func playPrevious() {
+        guard hasPrevious else { return }
+        queueIndex -= 1
+        start(queue[queueIndex])
+    }
+
+    /// Loads and begins playing a mix without touching the queue.
+    private func start(_ mix: Mix) {
+        teardownPlayer()
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback)
             try AVAudioSession.sharedInstance().setActive(true)
@@ -82,24 +120,34 @@ final class AudioPlayer: NSObject {
 
     /// Swaps to a different mix while keeping the current playback position and
     /// play/pause state — the core of A/B comparing two versions of a song.
+    /// Preserves any active queue so A/B'ing doesn't end project playback.
     func switchMix(to mix: Mix) {
         guard mix.id != currentMix?.id else { return }
         let resumeTime = currentTime
         let wasPlaying = isPlaying
-        play(mix)
+        start(mix)
         seek(to: resumeTime)
         if !wasPlaying { togglePlayPause() }
     }
 
+    /// Fully stops playback and clears the queue.
     func stop() {
+        teardownPlayer()
+        queue = []
+        queueIndex = 0
+        currentMix = nil
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    /// Tears down the AVAudioPlayer and timer without clearing the queue, so a
+    /// queue can advance from one track to the next.
+    private func teardownPlayer() {
         timer?.invalidate()
         timer = nil
         player?.stop()
         player = nil
         isPlaying = false
         currentTime = 0
-        currentMix = nil
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
     private func startTimer() {
@@ -160,6 +208,21 @@ final class AudioPlayer: NSObject {
             }
         }
 
+        center.nextTrackCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.hasNext else { return .noSuchContent }
+                self.playNext()
+                return .success
+            }
+        }
+        center.previousTrackCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.hasPrevious else { return .noSuchContent }
+                self.playPrevious()
+                return .success
+            }
+        }
+
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             MainActor.assumeIsolated {
                 guard let self, let event = event as? MPChangePlaybackPositionCommandEvent
@@ -196,9 +259,14 @@ final class AudioPlayer: NSObject {
 extension AudioPlayer: AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor in
-            self.isPlaying = false
-            self.currentTime = 0
-            self.updateNowPlayingInfo()
+            // Auto-advance through a project queue; otherwise rest at the end.
+            if self.hasNext {
+                self.playNext()
+            } else {
+                self.isPlaying = false
+                self.currentTime = 0
+                self.updateNowPlayingInfo()
+            }
         }
     }
 }

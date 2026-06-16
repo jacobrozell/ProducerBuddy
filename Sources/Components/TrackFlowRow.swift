@@ -21,6 +21,9 @@ struct TrackFlowRow: View {
                     .lineLimit(1)
                 HStack(spacing: 6) {
                     Text("\(song?.bpm ?? 0) BPM")
+                    if let code = song?.key.camelotCode {
+                        Text("· \(code)")
+                    }
                     if analysis.bpmDelta != 0 {
                         Text(deltaLabel)
                     }
@@ -30,6 +33,12 @@ struct TrackFlowRow: View {
             }
 
             Spacer()
+
+            if analysis.keyClash {
+                Image(systemName: "music.note")
+                    .foregroundStyle(.orange)
+                    .help(analysis.keyText ?? "Key clash with previous track")
+            }
 
             if analysis.hasWarning {
                 Image(systemName: "exclamationmark.triangle.fill")
