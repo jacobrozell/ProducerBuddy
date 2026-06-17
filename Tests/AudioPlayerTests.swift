@@ -14,12 +14,13 @@ struct AudioPlayerTests {
         #expect(player.isLooping == false)
     }
 
-    @Test("Toggling loop flips the flag")
+    @Test("Loop mode toggles whole-track looping")
     func loopToggles() {
         let player = AudioPlayer()
-        player.isLooping = true
+        player.loopMode = .wholeTrack
         #expect(player.isLooping)
-        player.isLooping = false
+        #expect(player.loopMode == .wholeTrack)
+        player.loopMode = .off
         #expect(player.isLooping == false)
     }
 

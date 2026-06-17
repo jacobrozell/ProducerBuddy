@@ -15,6 +15,7 @@ struct FullPlayerView: View {
     /// Local scrubber value; tracks playback unless the user is dragging.
     @State private var scrubValue: Double = 0
     @State private var isScrubbing = false
+    @State private var showingAudiogram = false
 
     private var compactHeight: Bool {
         AdaptiveLayout.isCompactHeight(verticalSizeClass)
@@ -39,6 +40,24 @@ struct FullPlayerView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        if ReleaseSurface.audiograms, audioPlayer.currentMix != nil, song != nil {
+                            Button("Export Audiogram…", systemImage: "waveform.path") {
+                                showingAudiogram = true
+                            }
+                            .accessibilityIdentifier(A11yID.Song.exportAudiogram)
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .accessibilityLabel("More")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAudiogram) {
+            if let mix = audioPlayer.currentMix, let song {
+                AudiogramExportSheet(mix: mix, song: song)
             }
         }
         .presentationDragIndicator(.visible)
@@ -65,7 +84,7 @@ struct FullPlayerView: View {
                 mixPickerSection
                 scrubber
                 transport
-                loopToggle
+                loopControls
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -79,7 +98,7 @@ struct FullPlayerView: View {
             mixPickerSection
             scrubber
             transport
-            loopToggle
+            loopControls
         }
     }
 
@@ -91,15 +110,8 @@ struct FullPlayerView: View {
     }
 
     @ViewBuilder
-    private var loopToggle: some View {
-        @Bindable var player = audioPlayer
-        Toggle(isOn: $player.isLooping) {
-            Label("Loop", systemImage: "repeat")
-        }
-        .toggleStyle(.button)
-        .tint(Brand.accent)
-        .accessibilityLabel("Loop playback")
-        .accessibilityValue(player.isLooping ? "On" : "Off")
+    private var loopControls: some View {
+        PlayerLoopControls()
     }
 
     /// Lazily generates and caches the current mix's waveform if it's missing
@@ -132,12 +144,22 @@ struct FullPlayerView: View {
             .aspectRatio(1, contentMode: .fit)
             .frame(maxHeight: AdaptiveLayout.playerArtworkSize(compactHeight: compactHeight))
             .overlay {
-                Image(systemName: "music.quarternote.3")
-                    .font(.system(size: compactHeight ? 44 : 72))
-                    .foregroundStyle(Brand.textOnAccent.opacity(0.9))
+                ZStack(alignment: .bottomTrailing) {
+                    Image(systemName: "music.quarternote.3")
+                        .font(.system(size: compactHeight ? 44 : 72))
+                        .foregroundStyle(Brand.textOnAccent.opacity(0.9))
+                    if let category = song?.category {
+                        Image(systemName: category.symbolName)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Brand.textOnAccent)
+                            .padding(10)
+                            .background(.black.opacity(0.22), in: Circle())
+                            .padding(12)
+                    }
+                }
             }
             .shadow(radius: compactHeight ? 6 : 12, y: compactHeight ? 3 : 6)
-            .accessibilityHidden(true)
+            .accessibilityLabel(song?.category.displayName ?? "Artwork")
     }
 
     private var titleBlock: some View {
@@ -266,7 +288,10 @@ struct FullPlayerView: View {
     private var transport: some View {
         HStack(spacing: compactHeight ? 24 : 36) {
             if hasQueue {
-                Button { audioPlayer.playPrevious() } label: {
+                Button {
+                    Haptics.tap()
+                    audioPlayer.playPrevious()
+                } label: {
                     Image(systemName: "backward.fill")
                 }
                 .disabled(!audioPlayer.hasPrevious)
@@ -274,7 +299,10 @@ struct FullPlayerView: View {
                 .accessibilityLabel("Previous track")
                 .accessibilityIdentifier(A11yID.Player.previous)
             } else {
-                Button { audioPlayer.skip(by: -15) } label: {
+                Button {
+                    Haptics.tap()
+                    audioPlayer.skip(by: -15)
+                } label: {
                     Image(systemName: "gobackward.15")
                 }
                 .minimumTapTarget()
@@ -294,7 +322,10 @@ struct FullPlayerView: View {
             .accessibilityIdentifier(A11yID.Player.playPause)
 
             if hasQueue {
-                Button { audioPlayer.playNext() } label: {
+                Button {
+                    Haptics.tap()
+                    audioPlayer.playNext()
+                } label: {
                     Image(systemName: "forward.fill")
                 }
                 .disabled(!audioPlayer.hasNext)
@@ -302,7 +333,10 @@ struct FullPlayerView: View {
                 .accessibilityLabel("Next track")
                 .accessibilityIdentifier(A11yID.Player.next)
             } else {
-                Button { audioPlayer.skip(by: 15) } label: {
+                Button {
+                    Haptics.tap()
+                    audioPlayer.skip(by: 15)
+                } label: {
                     Image(systemName: "goforward.15")
                 }
                 .minimumTapTarget()

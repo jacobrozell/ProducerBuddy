@@ -14,10 +14,17 @@ final class AudioPlayer: NSObject {
     private(set) var isPlaying = false
     private(set) var currentTime: Double = 0
     private(set) var duration: Double = 0
-    /// When true the current mix repeats on completion — handy for A/B'ing a
-    /// section of a track on loop.
-    var isLooping = false {
-        didSet { player?.numberOfLoops = isLooping ? -1 : 0 }
+    /// How the current mix repeats — whole track or a chosen section for A/B work.
+    var loopMode: PlaybackLoopMode = .off {
+        didSet { applyLoopMode() }
+    }
+
+    /// True when any loop mode is active (whole track or section).
+    var isLooping: Bool {
+        switch loopMode {
+        case .off: return false
+        case .wholeTrack, .section: return true
+        }
     }
 
     private var player: AVAudioPlayer?
@@ -80,7 +87,8 @@ final class AudioPlayer: NSObject {
             self.player = player
             self.currentMix = mix
             self.duration = player.duration
-            player.numberOfLoops = isLooping ? -1 : 0
+            validateLoopModeForCurrentDuration()
+            applyLoopMode()
             player.play()
             isPlaying = true
             startTimer()
@@ -109,6 +117,27 @@ final class AudioPlayer: NSObject {
         player.currentTime = max(0, min(time, player.duration))
         currentTime = player.currentTime
         updateNowPlayingInfo()
+    }
+
+    /// Enables section looping around the current playhead (default 30 s window).
+    func loopSection(around time: Double? = nil, length: Double = 30) {
+        let anchor = time ?? currentTime
+        guard let section = PlaybackLoopLogic.defaultSection(
+            around: anchor,
+            duration: duration,
+            length: length
+        ) else { return }
+        loopMode = .section(start: section.start, end: section.end)
+    }
+
+    /// Updates the active section loop bounds, clamped to the track duration.
+    func updateSectionLoop(start: Double, end: Double) {
+        guard let section = PlaybackLoopLogic.normalizedSection(
+            start: start,
+            end: end,
+            duration: duration
+        ) else { return }
+        loopMode = .section(start: section.start, end: section.end)
     }
 
     /// Jumps forward (positive) or backward (negative) by `seconds`, clamped to
@@ -156,7 +185,41 @@ final class AudioPlayer: NSObject {
             Task { @MainActor in
                 guard let self, let player = self.player else { return }
                 self.currentTime = player.currentTime
+                self.handleSectionLoopIfNeeded()
             }
+        }
+    }
+
+    private func validateLoopModeForCurrentDuration() {
+        if case let .section(start, end) = loopMode,
+           let normalized = PlaybackLoopLogic.normalizedSection(
+               start: start,
+               end: end,
+               duration: duration
+           ) {
+            loopMode = .section(start: normalized.start, end: normalized.end)
+        } else if case .section = loopMode {
+            loopMode = .off
+        }
+    }
+
+    private func applyLoopMode() {
+        switch loopMode {
+        case .off:
+            player?.numberOfLoops = 0
+        case .wholeTrack:
+            player?.numberOfLoops = -1
+        case .section:
+            player?.numberOfLoops = 0
+        }
+    }
+
+    private func handleSectionLoopIfNeeded() {
+        guard let player, case let .section(start, end) = loopMode else { return }
+        guard PlaybackLoopLogic.shouldRestart(currentTime: player.currentTime, end: end) else { return }
+        seek(to: start)
+        if isPlaying, !player.isPlaying {
+            player.play()
         }
     }
 
