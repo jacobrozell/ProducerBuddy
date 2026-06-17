@@ -11,4 +11,19 @@ extension Color {
         let blue = Double(value & 0xFF) / 255
         self.init(red: red, green: green, blue: blue)
     }
+
+    /// Returns `#RRGGBB` when the color can be represented in sRGB.
+    func toHexRGB() -> String? {
+        #if canImport(UIKit)
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return nil }
+        return String(format: "%02X%02X%02X", Int(red * 255), Int(green * 255), Int(blue * 255))
+        #else
+        return nil
+        #endif
+    }
 }

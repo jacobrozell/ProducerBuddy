@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Output shape for a generated share image.
-enum CardFormat: String, CaseIterable, Identifiable {
+enum CardFormat: String, CaseIterable, Identifiable, Sendable {
     case square = "Square"
     case story = "Story"
 
@@ -28,11 +28,11 @@ enum CardContent {
 struct ShareCardView: View {
     let content: CardContent
     let format: CardFormat
+    var brand: BrandKitSettings.Snapshot = BrandKitSettings.current()
 
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(tint.gradient)
+            background
             VStack(alignment: .leading, spacing: 0) {
                 header
                 Spacer(minLength: 12)
@@ -48,10 +48,36 @@ struct ShareCardView: View {
 
     // MARK: Sections
 
+    @ViewBuilder
+    private var background: some View {
+        switch brand.cardStyle {
+        case .minimal:
+            Rectangle().fill(brand.accentColor)
+        case .gradient:
+            Rectangle().fill(brand.accentColor.gradient)
+        case .bold:
+            ZStack {
+                Rectangle().fill(brand.accentColor)
+                Rectangle()
+                    .fill(.black.opacity(0.22))
+                    .blendMode(.multiply)
+            }
+        }
+    }
+
     private var header: some View {
         HStack(spacing: 8) {
-            Image(systemName: "music.quarternote.3")
-                .font(.title3)
+            if let logoURL = brand.logoURL, let uiImage = UIImage(contentsOfFile: logoURL.path) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .accessibilityHidden(true)
+            } else {
+                Image(systemName: "music.quarternote.3")
+                    .font(.title3)
+            }
             Text(kicker)
                 .font(.caption.weight(.bold))
                 .textCase(.uppercase)
@@ -77,8 +103,8 @@ struct ShareCardView: View {
                 .font(.system(size: titleSize, weight: .heavy, design: .rounded))
                 .lineLimit(3)
                 .minimumScaleFactor(0.6)
-            if !song.artist.isEmpty {
-                Text(song.artist)
+            if let credit = brand.creditLine(for: song) {
+                Text(credit)
                     .font(.title3.weight(.medium))
                     .opacity(0.9)
             }
@@ -88,6 +114,12 @@ struct ShareCardView: View {
                 if !song.genre.isEmpty { pill(song.genre) }
             }
             .padding(.top, 4)
+            if let dateLine = releaseDateLine(for: song) {
+                Text(dateLine)
+                    .font(.caption.weight(.semibold))
+                    .opacity(0.85)
+                    .padding(.top, 2)
+            }
         }
     }
 
@@ -101,9 +133,17 @@ struct ShareCardView: View {
                 Text(project.subtitle)
                     .font(.title3.weight(.medium))
                     .opacity(0.9)
+            } else if !brand.displayName.isEmpty {
+                Text(brand.displayName)
+                    .font(.title3.weight(.medium))
+                    .opacity(0.9)
+            }
+            if project.totalTrackCount > 0 {
+                Text("\(project.releasedTrackCount)/\(project.totalTrackCount) released")
+                    .font(.caption.weight(.semibold))
+                    .opacity(0.85)
             }
             VStack(alignment: .leading, spacing: 5) {
-                // Story format has room for more of the tracklist than square.
                 ForEach(visibleTracks(project)) { track in
                     HStack(spacing: 8) {
                         Text("\(track.position + 1).")
@@ -126,7 +166,7 @@ struct ShareCardView: View {
 
     private var footer: some View {
         HStack {
-            Text("Made with MixStack")
+            Text(brand.footerText)
                 .font(.caption2.weight(.semibold))
                 .opacity(0.8)
             Spacer()
@@ -157,8 +197,16 @@ struct ShareCardView: View {
     private var tint: Color {
         switch content {
         case .song(let song): return song.category.tint
-        case .project: return .accentColor
+        case .project: return brand.accentColor
         }
+    }
+
+    private func releaseDateLine(for song: Song) -> String? {
+        guard let date = song.releaseDate else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return "Out \(formatter.string(from: date))"
     }
 
     private func trackLimit() -> Int {
