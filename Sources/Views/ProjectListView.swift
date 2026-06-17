@@ -90,6 +90,7 @@ struct ProjectListView: View {
                     Text("Choose a release project to edit its running order and energy flow.")
                 }
                 .adaptiveEmptyStateLayout()
+                .accessibilityIdentifier(A11yID.Split.selectProject)
             }
         }
     }
@@ -169,6 +170,7 @@ struct ProjectListView: View {
         if selectedProjectID == project.id { selectedProjectID = nil }
         modelContext.delete(project)
         projectPendingDelete = nil
+        Haptics.tap()
     }
 
     private var deleteDialogTitle: String {
@@ -203,12 +205,26 @@ private struct ProjectRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(project.title)
                     .font(.headline)
-                Text("\(project.kind.displayName) · \(project.tracks.count) tracks · \(runtime)")
+                Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private var subtitle: String {
+        var parts = ["\(project.kind.displayName)", "\(project.tracks.count) tracks", runtime]
+        if project.totalTrackCount > 0 {
+            parts.append("\(project.releasedTrackCount)/\(project.totalTrackCount) released")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private var accessibilitySummary: String {
+        "\(project.title), \(subtitle)"
     }
 
     private var runtime: String {

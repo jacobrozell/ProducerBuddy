@@ -25,6 +25,25 @@ struct PersistenceIntegrationTests {
         #expect(projects.first?.tracks.count == 1)
     }
 
+    @Test("Release metadata survives relaunch on disk")
+    func relaunchPreservesReleaseMetadata() throws {
+        let storeURL = try PersistenceTestSupport.makeTemporaryStoreURL()
+        let firstContext = try PersistenceTestSupport.makeContext(storeURL: storeURL)
+
+        let song = Song(title: "Release Track", category: .released)
+        song.releaseDate = Date(timeIntervalSince1970: 1_700_000_000)
+        song.distributor = "DistroKid"
+        song.spotifyURL = "https://open.spotify.com/track/example"
+        firstContext.insert(song)
+        try firstContext.save()
+
+        let relaunchContext = try PersistenceTestSupport.makeContext(storeURL: storeURL)
+        let songs = try relaunchContext.fetch(FetchDescriptor<Song>())
+        #expect(songs.first?.distributor == "DistroKid")
+        #expect(songs.first?.spotifyURL.contains("spotify.com") == true)
+        #expect(songs.first?.releaseDate != nil)
+    }
+
     @Test("UITest catalog seeder is idempotent")
     func uiTestSeederIdempotent() throws {
         let storeURL = try PersistenceTestSupport.makeTemporaryStoreURL()

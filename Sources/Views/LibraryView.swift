@@ -7,6 +7,7 @@ enum LibrarySort: String, CaseIterable, Identifiable {
     case title = "Title"
     case bpm = "BPM"
     case rating = "Rating"
+    case releaseDate = "Release Date"
 
     var id: String { rawValue }
 }
@@ -164,6 +165,7 @@ extension LibraryView {
                     Text("Choose a track from your library to view mixes, metadata, and share options.")
                 }
                 .adaptiveEmptyStateLayout()
+                .accessibilityIdentifier(A11yID.Split.selectSong)
             }
         }
     }
@@ -407,6 +409,13 @@ extension LibraryView {
         case .title: return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
         case .bpm: return a.bpm < b.bpm
         case .rating: return a.rating > b.rating
+        case .releaseDate:
+            switch (a.releaseDate, b.releaseDate) {
+            case (nil, nil): return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+            case (nil, _): return false
+            case (_, nil): return true
+            case let (left?, right?): return left > right
+            }
         }
     }
 

@@ -29,6 +29,14 @@ final class Song {
     /// Lowercased title stem used for import matching.
     var normalizedTitle: String = ""
 
+    var releaseNotes: String = ""
+    /// Calendar date the track went or will go live on streaming.
+    var releaseDate: Date?
+    var distributor: String = ""
+    var spotifyURL: String = ""
+    var appleMusicURL: String = ""
+    var soundcloudURL: String = ""
+
     /// All mix versions for this song. Deleting the song deletes its mixes.
     @Relationship(deleteRule: .cascade, inverse: \Mix.song)
     var mixes: [Mix]
@@ -143,5 +151,18 @@ final class Song {
     /// The mix marked as primary, or the most recently added one as a fallback.
     var primaryMix: Mix? {
         mixes.first(where: { $0.isPrimary }) ?? mixes.max(by: { $0.dateAdded < $1.dateAdded })
+    }
+
+    var hasReleaseInfo: Bool {
+        releaseDate != nil
+            || !distributor.isEmpty
+            || !spotifyURL.isEmpty
+            || !appleMusicURL.isEmpty
+            || !soundcloudURL.isEmpty
+            || !releaseNotes.isEmpty
+    }
+
+    var needsReleaseInfoBanner: Bool {
+        category == .released && releaseDate == nil
     }
 }

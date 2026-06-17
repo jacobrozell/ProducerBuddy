@@ -67,4 +67,18 @@ final class Project {
     var totalDuration: Double {
         orderedTracks.reduce(0) { $0 + ($1.song?.primaryMix?.duration ?? 0) }
     }
+
+    var totalTrackCount: Int { orderedTracks.count }
+
+    var releasedTrackCount: Int {
+        orderedTracks.filter { $0.song?.category == .released }.count
+    }
+
+    var isFullyReleased: Bool {
+        guard totalTrackCount > 0 else { return false }
+        return orderedTracks.allSatisfy { track in
+            guard let song = track.song else { return false }
+            return song.category == .released && song.releaseDate != nil
+        }
+    }
 }

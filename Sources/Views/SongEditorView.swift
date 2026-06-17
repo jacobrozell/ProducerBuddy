@@ -4,10 +4,17 @@ import SwiftData
 /// Create or edit a song's metadata. When `song` is nil a new song is inserted
 /// on save; otherwise the passed song is edited in place.
 struct SongEditorView: View {
+    private enum Field: Hashable {
+        case title, artist, genre, exportPrefix, notes
+        case spotify, appleMusic, soundcloud, releaseNotes, distributorOther
+    }
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     let song: Song?
+
+    @FocusState private var focusedField: Field?
 
     @State private var title = ""
     @State private var artist = ""
@@ -20,22 +27,46 @@ struct SongEditorView: View {
     @State private var notes = ""
     @State private var exportPrefix = ""
     @State private var prefixValidation: ExportPrefixValidation?
+    @State private var hasReleaseDate = false
+    @State private var releaseDate = Date()
+    @State private var distributorPreset: DistributorPreset = .none
+    @State private var distributorOther = ""
+    @State private var spotifyURL = ""
+    @State private var appleMusicURL = ""
+    @State private var soundcloudURL = ""
+    @State private var releaseNotes = ""
 
     @Query private var allSongs: [Song]
 
     private var isEditing: Bool { song != nil }
+
+    private var bpmBinding: Binding<Double> {
+        Binding(
+            get: { Double(bpm) },
+            set: { bpm = Int($0.rounded()) }
+        )
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Details") {
                     TextField("Title", text: $title)
+                        .focused($focusedField, equals: .title)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .artist }
                     TextField("Artist", text: $artist)
+                        .focused($focusedField, equals: .artist)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .genre }
                     TextField("Genre", text: $genre)
+                        .focused($focusedField, equals: .genre)
+                        .submitLabel(.done)
+                        .onSubmit { focusedField = nil }
                 }
 
                 Section {
-                    Stepper("BPM: \(bpm)", value: $bpm, in: 40...300)
+                    bpmControl
                     Picker("Key", selection: $key) {
                         ForEach(MusicalKey.allCases) { key in
                             Text(key.displayName).tag(key)
@@ -72,6 +103,9 @@ struct SongEditorView: View {
                     TextField("Export prefix", text: $exportPrefix)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .focused($focusedField, equals: .exportPrefix)
+                        .submitLabel(.done)
+                        .onSubmit { focusedField = nil }
                         .accessibilityIdentifier(A11yID.Song.exportPrefix)
                         .onChange(of: exportPrefix) { _, newValue in
                             validatePrefix(newValue)
@@ -92,8 +126,13 @@ struct SongEditorView: View {
                 Section("Notes") {
                     TextField("Notes", text: $notes, axis: .vertical)
                         .lineLimit(3...8)
+                        .focused($focusedField, equals: .notes)
                 }
+
+                releaseSection
             }
+            .scrollDismissesKeyboard(.interactively)
+            .brandFormChrome()
             .navigationTitle(isEditing ? "Edit Song" : "New Song")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -104,6 +143,10 @@ struct SongEditorView: View {
                     Button("Save", action: save)
                         .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { focusedField = nil }
+                }
             }
             .onAppear(perform: loadIfEditing)
             .onChange(of: title) { _, newValue in
@@ -112,6 +155,69 @@ struct SongEditorView: View {
                     validatePrefix(exportPrefix)
                 }
             }
+        }
+    }
+
+    private var bpmControl: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("BPM")
+                Spacer()
+                Text("\(bpm)")
+                    .font(.body.monospacedDigit().weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            Slider(value: bpmBinding, in: 40...300, step: 1)
+                .accessibilityLabel("BPM")
+                .accessibilityValue("\(bpm) beats per minute")
+        }
+    }
+
+    private var releaseSection: some View {
+        Section {
+            Toggle("Release date", isOn: $hasReleaseDate)
+            if hasReleaseDate {
+                DatePicker("Date", selection: $releaseDate, displayedComponents: .date)
+            }
+            Picker("Distributor", selection: $distributorPreset) {
+                ForEach(DistributorPreset.allCases) { preset in
+                    Text(preset.displayName).tag(preset)
+                }
+            }
+            if distributorPreset == .other {
+                TextField("Distributor name", text: $distributorOther)
+                    .focused($focusedField, equals: .distributorOther)
+            }
+            TextField("Spotify URL", text: $spotifyURL)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                .focused($focusedField, equals: .spotify)
+            urlValidationText(spotifyURL)
+            TextField("Apple Music URL", text: $appleMusicURL)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                .focused($focusedField, equals: .appleMusic)
+            urlValidationText(appleMusicURL)
+            TextField("SoundCloud URL", text: $soundcloudURL)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                .focused($focusedField, equals: .soundcloud)
+            urlValidationText(soundcloudURL)
+            TextField("Release notes", text: $releaseNotes, axis: .vertical)
+                .lineLimit(2...6)
+                .focused($focusedField, equals: .releaseNotes)
+        } header: {
+            Text("Release")
+        } footer: {
+            Text("Paste streaming links after your distributor upload goes live.")
+        }
+    }
+
+    @ViewBuilder
+    private func urlValidationText(_ value: String) -> some View {
+        if let message = ReleaseURLValidator.validationMessage(for: value) {
+            Text(message).font(.caption).foregroundStyle(.red)
         }
     }
 
@@ -128,6 +234,18 @@ struct SongEditorView: View {
             notes = song.notes
             exportPrefix = song.exportPrefix
             validatePrefix(exportPrefix)
+            if let date = song.releaseDate {
+                hasReleaseDate = true
+                releaseDate = date
+            }
+            distributorPreset = DistributorPreset.allCases.first {
+                $0.rawValue == song.distributor
+            } ?? (song.distributor.isEmpty ? .none : .other)
+            distributorOther = distributorPreset == .other ? song.distributor : ""
+            spotifyURL = song.spotifyURL
+            appleMusicURL = song.appleMusicURL
+            soundcloudURL = song.soundcloudURL
+            releaseNotes = song.releaseNotes
         } else if VersionImportSettings.autoSuggestExportPrefix {
             exportPrefix = ExportPrefixSuggester.suggest(from: title)
         }
@@ -146,6 +264,15 @@ struct SongEditorView: View {
         let trimmedPrefix = exportPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
         validatePrefix(trimmedPrefix)
         guard prefixValidation?.isValid ?? true else { return }
+        guard [spotifyURL, appleMusicURL, soundcloudURL].allSatisfy(ReleaseURLValidator.isValid) else { return }
+
+        let distributorValue: String = {
+            switch distributorPreset {
+            case .none: return ""
+            case .other: return distributorOther.trimmingCharacters(in: .whitespacesAndNewlines)
+            default: return distributorPreset.rawValue
+            }
+        }()
 
         if let song {
             song.title = trimmedTitle
@@ -160,6 +287,7 @@ struct SongEditorView: View {
             song.exportPrefix = trimmedPrefix
             song.exportPrefixIsManual = !trimmedPrefix.isEmpty
             song.refreshNormalizedTitle()
+            applyReleaseFields(to: song, distributor: distributorValue)
         } else {
             let new = Song(
                 title: trimmedTitle,
@@ -174,9 +302,19 @@ struct SongEditorView: View {
                 exportPrefixIsManual: !trimmedPrefix.isEmpty
             )
             applyVocalPresence(to: new)
+            applyReleaseFields(to: new, distributor: distributorValue)
             modelContext.insert(new)
         }
         dismiss()
+    }
+
+    private func applyReleaseFields(to song: Song, distributor: String) {
+        song.releaseDate = hasReleaseDate ? releaseDate : nil
+        song.distributor = distributor
+        song.spotifyURL = ReleaseURLValidator.normalized(spotifyURL)
+        song.appleMusicURL = ReleaseURLValidator.normalized(appleMusicURL)
+        song.soundcloudURL = ReleaseURLValidator.normalized(soundcloudURL)
+        song.releaseNotes = releaseNotes
     }
 
     private func applyVocalPresence(to song: Song) {
