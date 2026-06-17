@@ -30,4 +30,7 @@ enum ReleaseSurface {
     /// Automatic BPM/key detection. Ships on, but can be hidden if a device QA
     /// pass finds the estimates misleading.
     static var audioAnalysis: Bool { isEnabled(true) }
+
+    /// Audiogram video export for social teasers.
+    static var audiograms: Bool { isEnabled(true) }
 }
