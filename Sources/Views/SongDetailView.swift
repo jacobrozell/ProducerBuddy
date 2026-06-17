@@ -11,17 +11,22 @@ struct SongDetailView: View {
     @State private var showingEditor = false
     @State private var showingImporter = false
     @State private var showingShareCard = false
+    @State private var showingAudiogram = false
     @State private var isDetecting = false
     @State private var mixPendingDelete: Mix?
+    @State private var songPendingDeleteAfterLastMix = false
     @State private var mixToEdit: Mix?
-    @State private var exportPrefixDraft = ""
-    @State private var prefixValidation: ExportPrefixValidation?
 
     var body: some View {
         List {
             headerSection
-            exportPrefixSection
+            SongExportPrefixSection(song: song, allSongs: allSongs)
             metadataSection
+            if song.hasReleaseInfo || song.category == .released {
+                Section("Release") {
+                    ReleaseInfoCard(song: song)
+                }
+            }
             versionsSection
             if !song.notes.isEmpty {
                 Section("Notes") {
@@ -44,6 +49,19 @@ struct SongDetailView: View {
                     if ReleaseSurface.shareCards {
                         Button("Share Card", systemImage: "photo") { showingShareCard = true }
                             .accessibilityIdentifier(A11yID.Song.shareCard)
+                    }
+                    if ReleaseSurface.audiograms, song.primaryMix != nil {
+                        Button("Export Audiogram…", systemImage: "waveform.path") {
+                            showingAudiogram = true
+                        }
+                        .accessibilityIdentifier(A11yID.Song.exportAudiogram)
+                    }
+                    if song.mixes.contains(where: { $0.integratedLUFS == nil }) {
+                        Button("Analyze Loudness", systemImage: "speaker.wave.3") {
+                            analyzeAllLoudness()
+                        }
+                        .disabled(isDetecting)
+                        .accessibilityIdentifier(A11yID.Song.analyzeLoudness)
                     }
                     ShareLink(item: shareText) {
                         Label("Share Text", systemImage: "square.and.arrow.up")
@@ -68,6 +86,11 @@ struct SongDetailView: View {
         .sheet(isPresented: $showingShareCard) {
             ShareCardSheet(content: .song(song))
         }
+        .sheet(isPresented: $showingAudiogram) {
+            if let mix = song.primaryMix {
+                AudiogramExportSheet(mix: mix, song: song)
+            }
+        }
         .overlay(alignment: .bottom) {
             if isDetecting {
                 Label("Analyzing audio…", systemImage: "waveform.and.magnifyingglass")
@@ -80,7 +103,7 @@ struct SongDetailView: View {
             }
         }
         .confirmationDialog(
-            "Delete version?",
+            deleteMixDialogTitle,
             isPresented: deleteMixPresented,
             titleVisibility: .visible
         ) {
@@ -90,67 +113,49 @@ struct SongDetailView: View {
             Button("Cancel", role: .cancel) { mixPendingDelete = nil }
         } message: {
             if let mix = mixPendingDelete {
-                Text("Remove \"\(mix.displayName)\" and its audio file? This can't be undone.")
+                Text(deleteMixDialogMessage(for: mix))
             }
         }
-        .onAppear {
-            exportPrefixDraft = song.exportPrefix
-        }
-    }
-
-    private var exportPrefixSection: some View {
-        Section {
-            HStack {
-                TextField("NightDrive_", text: $exportPrefixDraft)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .accessibilityIdentifier(A11yID.Song.exportPrefix)
-                    .onChange(of: exportPrefixDraft) { _, newValue in
-                        validatePrefix(newValue)
-                    }
-                if !exportPrefixDraft.isEmpty {
-                    Button("Copy", systemImage: "doc.on.doc") {
-                        UIPasteboard.general.string = exportPrefixDraft
-                    }
-                    .labelStyle(.iconOnly)
-                    .accessibilityLabel("Copy export prefix")
-                }
-            }
-            if let prefixValidation {
-                if let error = prefixValidation.error {
-                    Text(error).font(.caption).foregroundStyle(.red)
-                } else if let warning = prefixValidation.warning {
-                    Text(warning).font(.caption).foregroundStyle(.orange)
-                }
-            }
-            Text(
-                "Name FL exports like \(exportPrefixDraft.isEmpty ? "YourBeat_" : exportPrefixDraft)"
-                + "master.mp3 and they stack here automatically."
-            )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Save Prefix") { saveExportPrefix() }
-                .disabled(!(prefixValidation?.isValid ?? true))
-        } header: {
-            Text("Export Naming")
+        .confirmationDialog(
+            "Delete \"\(song.title)\"?",
+            isPresented: $songPendingDeleteAfterLastMix,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Song", role: .destructive) { deleteSongAfterLastMix() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("That was the only version. Delete the song and its audio from this device?")
         }
     }
 
-    private func validatePrefix(_ value: String) {
-        prefixValidation = ExportPrefixValidator.validate(
-            value,
-            excludingSongID: song.id,
-            existingSongs: allSongs
-        )
+    private func analyzeLoudness(_ mix: Mix) {
+        let mixID = mix.persistentModelID
+        let url = mix.fileURL
+        Task { @MainActor in
+            guard let lufs = await LoudnessAnalyzer.estimateIntegratedLUFS(url: url),
+                  let mix = modelContext.model(for: mixID) as? Mix else { return }
+            mix.integratedLUFS = lufs
+            mix.loudnessAnalyzedAt = .now
+            Haptics.success()
+        }
     }
 
-    private func saveExportPrefix() {
-        let trimmed = exportPrefixDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        validatePrefix(trimmed)
-        guard prefixValidation?.isValid ?? true else { return }
-        song.exportPrefix = trimmed
-        song.exportPrefixIsManual = !trimmed.isEmpty
-        Haptics.success()
+    private func analyzeAllLoudness() {
+        for mix in song.mixes where mix.integratedLUFS == nil {
+            analyzeLoudness(mix)
+        }
+    }
+
+    private var deleteMixDialogTitle: String {
+        guard mixPendingDelete != nil else { return "Delete version?" }
+        return song.mixes.count == 1 ? "Delete only version?" : "Delete version?"
+    }
+
+    private func deleteMixDialogMessage(for mix: Mix) -> String {
+        if song.mixes.count == 1 {
+            return "Remove \"\(mix.displayName)\" — the song will have no audio left."
+        }
+        return "Remove \"\(mix.displayName)\" and its audio file? This can't be undone."
     }
 
     private func detectMetadata() {
@@ -173,11 +178,18 @@ struct SongDetailView: View {
                     .fill(song.category.tint.gradient)
                     .frame(height: 120)
                     .overlay {
-                        Image(systemName: "music.quarternote.3")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.white.opacity(0.9))
+                        ZStack(alignment: .bottomTrailing) {
+                            Image(systemName: "music.quarternote.3")
+                                .font(.system(size: 44))
+                                .foregroundStyle(.white.opacity(0.9))
+                            Image(systemName: song.category.symbolName)
+                                .font(.caption.weight(.bold))
+                                .padding(8)
+                                .background(.black.opacity(0.22), in: Circle())
+                                .padding(10)
+                        }
                     }
-                    .accessibilityHidden(true)
+                    .accessibilityLabel("\(song.title), \(song.category.displayName)")
                 HStack {
                     CategoryBadge(category: song.category)
                     if song.mixes.count > 1 {
@@ -223,7 +235,8 @@ struct SongDetailView: View {
                     VersionStackRow(
                         mix: mix,
                         onTogglePrimary: { setPrimary(mix) },
-                        onEdit: { mixToEdit = mix }
+                        onEdit: { mixToEdit = mix },
+                        onAnalyzeLoudness: { analyzeLoudness(mix) }
                     )
                 }
                 .onDelete(perform: requestDeleteMixes)
@@ -250,6 +263,7 @@ struct SongDetailView: View {
         if !song.artist.isEmpty { parts.append("by \(song.artist)") }
         parts.append("\(song.bpm) BPM")
         if !song.genre.isEmpty { parts.append(song.genre) }
+        if !song.spotifyURL.isEmpty { parts.append(song.spotifyURL) }
         return parts.joined(separator: " · ") + "\n\nMade with MixStack"
     }
 
@@ -268,8 +282,14 @@ struct SongDetailView: View {
         let url = mix.fileURL
         Task { @MainActor in
             let peaks = await WaveformGenerator.generate(url: url)
-            guard !peaks.isEmpty, let mix = modelContext.model(for: mixID) as? Mix else { return }
-            mix.waveform = peaks
+            if !peaks.isEmpty, let mix = modelContext.model(for: mixID) as? Mix {
+                mix.waveform = peaks
+            }
+            if let lufs = await LoudnessAnalyzer.estimateIntegratedLUFS(url: url),
+               let mix = modelContext.model(for: mixID) as? Mix {
+                mix.integratedLUFS = lufs
+                mix.loudnessAnalyzedAt = .now
+            }
         }
     }
 
@@ -291,9 +311,19 @@ struct SongDetailView: View {
         if audioPlayer.currentMix?.id == mix.id {
             audioPlayer.stop()
         }
+        let wasLastMix = song.mixes.count == 1
         AudioStorage.deleteFile(named: mix.fileName)
         modelContext.delete(mix)
         mixPendingDelete = nil
+        if wasLastMix {
+            songPendingDeleteAfterLastMix = true
+        }
+    }
+
+    private func deleteSongAfterLastMix() {
+        modelContext.delete(song)
+        songPendingDeleteAfterLastMix = false
+        Haptics.tap()
     }
 
     private var deleteMixPresented: Binding<Bool> {
@@ -308,80 +338,5 @@ struct SongDetailView: View {
             get: { mixToEdit != nil },
             set: { if !$0 { mixToEdit = nil } }
         )
-    }
-}
-
-/// One row in the song's version stack.
-struct VersionStackRow: View {
-    let mix: Mix
-    let onTogglePrimary: () -> Void
-    let onEdit: () -> Void
-    @Environment(AudioPlayer.self) private var audioPlayer
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Button {
-                Haptics.tap()
-                audioPlayer.play(mix)
-            } label: {
-                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(Color.accentColor)
-            }
-            .buttonStyle(.plain)
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(mix.displayName)
-                        .font(.body.weight(.medium))
-                    Text(mix.role.displayName)
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(mix.role.tint.opacity(0.2), in: Capsule())
-                        .foregroundStyle(mix.role.tint)
-                }
-                Text(mix.formattedDuration)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .layoutPriority(1)
-
-            Spacer(minLength: 8)
-
-            if mix.hasWaveform {
-                WaveformView(
-                    samples: mix.waveform,
-                    progress: isCurrent ? playedFraction : 0,
-                    playedColor: .accentColor,
-                    unplayedColor: Color(.systemGray4)
-                )
-                .frame(width: 72, height: 24)
-                .allowsHitTesting(false)
-            }
-
-            Button(action: onTogglePrimary) {
-                Image(systemName: mix.isPrimary ? "star.fill" : "star")
-                    .foregroundStyle(mix.isPrimary ? .yellow : .secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(mix.isPrimary ? "Primary version" : "Set as primary")
-        }
-        .contentShape(Rectangle())
-        .onTapGesture(count: 2, perform: onEdit)
-        .accessibilityHint("Double tap to edit")
-    }
-
-    private var isPlaying: Bool {
-        audioPlayer.isPlaying && audioPlayer.currentMix?.id == mix.id
-    }
-
-    private var isCurrent: Bool {
-        audioPlayer.currentMix?.id == mix.id
-    }
-
-    private var playedFraction: Double {
-        guard isCurrent, audioPlayer.duration > 0 else { return 0 }
-        return audioPlayer.currentTime / audioPlayer.duration
     }
 }

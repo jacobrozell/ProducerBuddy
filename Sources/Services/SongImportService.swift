@@ -97,6 +97,7 @@ enum SongImportService {
 
         for item in pending {
             scheduleWaveformGeneration(mixID: item.mixID, fileURL: item.fileURL, context: context)
+            scheduleLoudnessAnalysis(mixID: item.mixID, fileURL: item.fileURL, context: context)
             if item.analyzeSong, let songID = item.songID {
                 scheduleMetadataDetection(songID: songID, fileURL: item.fileURL, context: context)
             }
@@ -139,6 +140,18 @@ enum SongImportService {
             let peaks = await WaveformGenerator.generate(url: fileURL)
             guard !peaks.isEmpty, let mix = context.model(for: mixID) as? Mix else { return }
             mix.waveform = peaks
+        }
+    }
+
+    @MainActor
+    private static func scheduleLoudnessAnalysis(
+        mixID: PersistentIdentifier, fileURL: URL, context: ModelContext
+    ) {
+        Task { @MainActor in
+            guard let lufs = await LoudnessAnalyzer.estimateIntegratedLUFS(url: fileURL),
+                  let mix = context.model(for: mixID) as? Mix else { return }
+            mix.integratedLUFS = lufs
+            mix.loudnessAnalyzedAt = .now
         }
     }
 

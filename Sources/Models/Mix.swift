@@ -23,6 +23,9 @@ final class Mix {
     var sourceFileName: String?
     var versionLabel: String?
     var sortOrder: Int = 0
+    /// Cached integrated loudness estimate (LUFS), nil until analyzed.
+    var integratedLUFS: Double?
+    var loudnessAnalyzedAt: Date?
 
     var song: Song?
 
