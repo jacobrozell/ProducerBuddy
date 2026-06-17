@@ -100,9 +100,10 @@ struct SettingsView: View {
             }
             .onChange(of: brandStore.cardStyle) { _, _ in brandStore.persist() }
 
-            PhotosPicker(selection: $logoPickerItem, matching: .images) {
-                Label(brandStore.logoFilename == nil ? "Add Logo" : "Replace Logo", systemImage: "photo")
-            }
+            LogoPhotosPicker(
+                selection: $logoPickerItem,
+                label: brandStore.logoFilename == nil ? "Add Logo" : "Replace Logo"
+            )
 
             if brandStore.logoFilename != nil {
                 Button("Remove Logo", role: .destructive) {
@@ -349,5 +350,17 @@ struct SettingsView: View {
             parts.append("\(result.songsMerged) duplicate song\(result.songsMerged == 1 ? "" : "s") merged")
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// Isolates the `PhotosPicker` label so it only captures a `String`, not `@MainActor` state.
+private struct LogoPhotosPicker: View {
+    @Binding var selection: PhotosPickerItem?
+    let label: String
+
+    var body: some View {
+        PhotosPicker(selection: $selection, matching: .images) {
+            Label(label, systemImage: "photo")
+        }
     }
 }

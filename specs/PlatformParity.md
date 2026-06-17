@@ -20,9 +20,9 @@ Adoption plan to bring MixStack to the same engineering bar as **Dart Buddy** an
 | UI test matrix | Nightly parallel schemes | ✅ split targets + nightly jobs |
 | GitHub Pages | Shared CSS, legal pages | 🟡 `docs/assets/style.css` |
 | A11y audits | Dated VoiceOver reports | 🟡 `2026-06-16-voiceover-core-flows.md` |
-| Localization | String Catalog + parity test | ⛔ |
+| Localization | String Catalog + parity test | 🟡 `L10n` scaffold |
 | Repository layer | `any …Repository` DI | ⛔ |
-| Brand Kit | Share-surface accent | ⛔ spec only |
+| Brand Kit | Share-surface accent | ✅ `BrandKitStore` |
 
 ## Phase 1 — Foundations (this pass)
 
@@ -54,9 +54,9 @@ Adoption plan to bring MixStack to the same engineering bar as **Dart Buddy** an
 
 ## Phase 5 — Polish & ship
 
-- String Catalog (en → es/de later)
+- String Catalog (en → es/de later) — scaffold in place
 - iPad `NavigationSplitView` for library + detail ✅
-- Brand Kit for share cards
+- Brand Kit for share cards ✅
 - App Store metadata + screenshots
 
 ## References

@@ -134,6 +134,6 @@ Filter bar evolution:
 ## Verification
 
 - Target release: next polish sprint (before release tracking)
-- Last verified: 2026-06-16 (implemented)
+- Last verified: 2026-06-17 (implemented)
 - Primary code paths: `LibraryView`, `LibraryFiltersSheet`, `LibraryFilterLogic`,
   `AddToProjectSheet`, `ProjectListView`, `SongImportService`, `AudioImporter`

@@ -120,7 +120,7 @@ Full player shows **Track 2 of 5 · Project Name** in queue mode (may exist ✅)
 
 ## Verification
 
-- Target release: post-v1 sequencing batch
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: `SequencingEngine`, `ProjectDetailView`, `ProjectTrack`,
-  `AudioPlayer`
+- Target release: partial — suggest-order preview shipped; arcs/transitions planned
+- Last verified: 2026-06-17 (**preview implemented**)
+- Primary code paths: `SequencingEngine.orderMoves`, `SuggestOrderPreviewSheet`, `ProjectDetailView`
+- Tests: `SequencingEngineTests.swift`

@@ -107,6 +107,7 @@ struct NowPlayingBar: View {
             .accessibilityIdentifier(A11yID.Player.playPause)
 
             Button {
+                Haptics.tap()
                 audioPlayer.stop()
             } label: {
                 Image(systemName: "xmark.circle.fill")

@@ -1,4 +1,4 @@
-# ProducerBuddy — UX Polish & Feature Roadmap
+# MixStack — UX Polish & Feature Roadmap
 
 This document looks at the app the way a working producer would actually use it,
 calls out the friction in today's build, and lays out where it should go next.
@@ -18,78 +18,55 @@ each and don't need new data models.
 
 ### Capture & import
 - ✅ **Import audio first, song second.** *(Shipped.)* See [LibraryAndImport](specs/shipped/LibraryAndImport.md).
-- **Version-aware import.** Re-exports of the same beat should attach as a new
-  **mix**, not a duplicate song — filename parsing, match scoring, resolution
-  sheet. **Spec:** [`specs/VersionStack.md`](specs/VersionStack.md).
-- **Read embedded metadata on import.** Pull title/artist/artwork from the
-  file's ID3/MP4 tags (`AVAsset` `commonMetadata`) instead of leaving every
-  field blank.
-- **Batch import progress.** When importing several files, show a small inline
-  progress row rather than a silent pause while durations are measured.
+- 🟡 **Version-aware import.** Export-prefix matching, resolution sheet, and mix
+  roles ship today; full compare UI and smarter filename scoring remain. **Spec:**
+  [`specs/VersionStack.md`](specs/VersionStack.md).
+- ✅ **Read embedded metadata on import.** Title/artist pulled from ID3/MP4 tags
+  via `AVAsset` `commonMetadata` (`AudioStorage`).
+- ✅ **Batch import progress.** Inline progress row while multiple files import.
 
 ### Library legibility
-- **BPM/key/rating filters and ranges.** Search is substring-only. Producers
-  think in ranges ("show me my 120–128 house tracks"). Add filter chips for key
-  and a BPM range slider alongside the existing category bar.
-- **Section headers when sorting.** When sorted by BPM or rating, break the list
-  into labeled sections (e.g. "90–110 BPM") so the list scans at a glance.
-- **Swipe actions.** Add leading/trailing swipes on song rows for Favorite and
-  "Add to Project…" so common actions don't require opening detail.
-- **Confirm destructive deletes.** Deleting a song silently removes all its
-  mixes and audio files. Add a confirmation dialog noting how many mixes/files
-  will be removed.
+- ✅ **BPM/key/rating filters and ranges.** `LibraryFiltersSheet` + category bar.
+- ✅ **Section headers when sorting.** BPM and rating buckets via `LibraryFilterLogic`.
+- ✅ **Swipe actions.** Favorite, add to project, delete on song rows.
+- ✅ **Confirm destructive deletes.** Dialog notes mixes/files removed.
 
 ### Playback
-- **Tap-to-expand full player.** The now-playing bar shows progress but you
-  can't scrub it. Make the bar tappable to present a full-screen player with a
-  draggable scrubber, skip ±15s, and a loop toggle.
-- **Drag-to-scrub on the bar itself** as a lighter alternative.
-- **A/B mix compare.** When a song has multiple mixes, let the user switch mixes
-  *without losing playback position* and optionally loop a section — the single
-  most-requested producer workflow for picking the best mix.
-- **Haptics** on play/pause, primary-mix toggle, and reorder drops.
+- ✅ **Tap-to-expand full player.** Now-playing bar opens `FullPlayerView`.
+- ✅ **Drag-to-scrub on the bar itself.** Slider on the mini bar.
+- ✅ **A/B mix compare.** Switch mixes without losing position; **section loop**
+  mode in the full player for auditioning a region.
+- ✅ **Haptics** on play/pause, stop, mix switch, scrub release, and reorder drops.
 
 ### Sequencing clarity
-- ✅ **Energy curve graph.** *(Shipped.)* The project's BPM-over-tracklist is
-  drawn as a Swift Charts area/line above the running order with the peak track
-  marked — seeing the *shape* of the record (the rise to a peak, the wind-down)
-  is far more intuitive than per-row badges alone.
-- ✅ **Explain the badges.** *(Shipped.)* A `FlowLegend` under the chart keys the
-  Rise/Fall/Steady badges and the abrupt-jump warning. *Still open:* a tap-to-
-  explain popover on each individual badge.
-- **Diff preview for "Suggest Order."** Before committing the auto-sequence,
-  show what's moving where and let the user accept or undo, rather than
-  silently rewriting their order.
+- ✅ **Energy curve graph.** Swift Charts BPM-over-tracklist with peak marker.
+- ✅ **Explain the badges.** `FlowLegend` plus tap-to-explain popovers on each
+  row badge (rise/fall, warnings, key clash).
+- ✅ **Diff preview for "Suggest Order."** `SuggestOrderPreviewSheet` before apply.
 
 ### Accessibility & visual baseline
-- **VoiceOver labels** on the icon-only buttons (play, primary star, stop) and
-  combined labels on song rows.
-- **Dynamic Type passes** — verify rows reflow at accessibility text sizes; the
-  fixed 46pt artwork and trailing rating column are the risky spots.
-- **Don't rely on color alone.** Category is color-coded in `SongRow`'s play
-  button; pair it with the category symbol for colorblind users.
-- **Larger star hit targets** — the 0–5 star control taps are currently small.
+- ✅ **VoiceOver labels** on transport, rows, and icon-only controls.
+- 🟡 **Dynamic Type passes** — rows reflow at accessibility sizes in code; manual
+  VoiceOver + AXXXL sign-off on a physical device still pending.
+- ✅ **Don't rely on color alone.** Category symbol paired with tint on play buttons.
+- ✅ **Larger star hit targets** in `StarRatingView`.
 
 ---
 
 ## 2. Visual Sharing (the brief's headline ask)
 
-The original spec stressed sharing music "in a clean, consistent, and visual
-way" and exporting "directly to social media." Today sharing is plain text —
-this is the biggest gap between the build and the vision.
+PNG release cards, brand kit, and audiograms ship today. Remaining gaps are extra
+formats and link-in-bio tooling.
 
-- ✅ **Generated release cards.** *(Shipped.)* `ImageRenderer` turns a song or
-  project into a polished, on-brand image card (title, BPM/key, tracklist) in
-  square or story format, shared as a PNG. This is the visual, consistent share
-  the brief wanted. *Next:* an editable artwork slot instead of the gradient.
-- **Brand kit.** Let the user set an accent color, logo, and font once; every
-  card inherits it so their releases look consistent across posts.
-- **Audiogram export.** Render a short video clip (waveform animating over a
-  card) for a chosen 15–30s snippet — the format that actually performs on
-  social.
-- **Per-platform presets.** Story (9:16), post (1:1), and banner (16:9) layouts
-  from the same content.
-- **Pre-save / link-in-bio page** generator for an upcoming release.
+- ✅ **Generated release cards.** `ImageRenderer` → square/story PNG. See
+  [Sharing](specs/shipped/Sharing.md).
+- ✅ **Brand kit.** Accent, logo, tagline, and card style in Settings; inherited by
+  share cards and audiograms. See [BrandKit](specs/BrandKit.md).
+- ✅ **Audiogram export.** Branded MP4 teaser with animated waveform. See
+  [AudiogramExport](specs/AudiogramExport.md).
+- 🟡 **Per-platform presets.** Square (1:1) and story (9:16) ship; **banner (16:9)**
+  still open.
+- ⛔ **Pre-save / link-in-bio page** generator for an upcoming release.
 
 ---
 
@@ -97,20 +74,12 @@ this is the biggest gap between the build and the vision.
 
 Deepen the feature that makes this app more than a file manager.
 
-- ✅ **Harmonic mixing (Camelot wheel).** *(Shipped.)* Each key maps to a Camelot
-  code; the flow analysis flags key clashes between adjacent tracks (a 🎵 marker
-  plus a legend entry), and the running order shows each track's code. *Still
-  open:* actively *suggesting* harmonically compatible neighbours.
-- **Multi-signal energy model.** Blend BPM with rating, song duration, and an
-  optional manual "energy" tag instead of using BPM alone as the proxy.
-- **Multiple arc templates.** Beyond the single build-to-peak suggestion, offer
-  named arcs — "slow burn," "front-loaded," "two peaks," "DJ set / continuous
-  rise" — and let the user pick the shape they're going for.
-- **Intro/outro & transition notes.** Per-track fields for intro/outro energy
-  and a free-text transition note between tracks (the crossfade idea, the key
-  change) so sequencing decisions are remembered.
-- **Gapless / crossfade preview.** Play the project end-to-end with configurable
-  gaps or crossfades to *hear* the sequence, not just read it.
+- ✅ **Harmonic mixing (Camelot wheel).** Key clashes flagged in flow analysis.
+  *Still open:* actively *suggesting* harmonically compatible neighbours.
+- ⛔ **Multi-signal energy model.** Blend BPM with rating, duration, manual energy tag.
+- ⛔ **Multiple arc templates.** "Slow burn," "front-loaded," "two peaks," etc.
+- ⛔ **Intro/outro & transition notes.** Per-track fields for crossfade/key-change notes.
+- ⛔ **Gapless / crossfade preview.** Hear the sequence end-to-end with configurable gaps.
 
 ---
 
@@ -118,29 +87,15 @@ Deepen the feature that makes this app more than a file manager.
 
 Heavier lifts that move the app toward a real production companion.
 
-- ✅ **Waveform views** for every mix. *(Shipped.)* Audio is streamed into
-  normalized peak buckets, cached on the `Mix`, and drawn with `Canvas`; the full
-  player uses it as an interactive scrubber and mix rows show a mini waveform.
-  Still a prerequisite for audiograms and section-loop A/B.
-- ✅ **Auto BPM & key detection.** *(Shipped.)* On import (and on demand via
-  "Detect Audio Metadata"), `AudioAnalyzer` estimates tempo by autocorrelating an
-  onset-energy envelope and key via a Goertzel chromagram correlated against the
-  Krumhansl–Schmuckler profiles — a lightweight estimate the user can correct,
-  computed off the main actor. *Next:* tightening accuracy with a proper
-  spectral-flux onset detector.
-- ✅ **Vocal detection with confidence meter.** *(Shipped.)* Heuristic detector
-  in `AudioAnalyzer` tags mixes as instrumental or with vocals, surfaces a
-  confidence score on song detail, supports manual override, and filters the
-  library. See [`specs/VocalDetection.md`](specs/VocalDetection.md).
-- **Reference-loudness check.** Show integrated LUFS per mix so the user can
-  spot a master that's too quiet/hot before release. (Analysis only — not a
-  mastering engine.)
-- **Pitch / tempo preview** (non-destructive) using `AVAudioEngine` time/pitch
-  units to audition a track sped up/slowed down for a sequence.
-- **Stem/section markers.** Let users drop markers (drop, breakdown, hook) on a
-  mix's timeline for quick navigation and snippet selection.
-- *(Explicitly out of scope: a full EQ/mastering chain or true stem separation —
-  these are large enough to be their own apps.)*
+- ✅ **Waveform views** for every mix. Cached peaks + `Canvas` scrubber.
+- ✅ **Auto BPM & key detection.** `AudioAnalyzer` on import and on demand.
+- ✅ **Vocal detection with confidence meter.** See [`specs/VocalDetection.md`](specs/VocalDetection.md).
+- ✅ **Reference-loudness check.** Integrated LUFS per mix (`LoudnessAnalyzer`). Analysis
+  only — not a mastering engine. See [LoudnessAnalysis](specs/LoudnessAnalysis.md).
+- ⛔ **Pitch / tempo preview** (non-destructive) via `AVAudioEngine`.
+- ⛔ **Stem/section markers.** Drop/breakdown/hook markers on the timeline. See
+  [TimelineMarkers](specs/TimelineMarkers.md).
+- *(Explicitly out of scope: a full EQ/mastering chain or true stem separation.)*
 
 ---
 
@@ -148,21 +103,13 @@ Heavier lifts that move the app toward a real production companion.
 
 The things that make people keep their catalog in the app long-term.
 
-- ✅ **Background audio + lock-screen controls.** *(Shipped.)*
-  `MPNowPlayingInfoCenter` + `MPRemoteCommandCenter` are wired up and the `audio`
-  background mode keeps playback running when backgrounded.
-- ✅ **Queue & project playback.** *(Shipped.)* "Play in Order" plays a whole
-  project as an auto-advancing queue, with prev/next in the full player and on
-  the lock screen.
-- **iCloud sync & backup.** Move the SwiftData store to CloudKit so a catalog
-  survives device loss and syncs iPad↔iPhone. Audio files sync via iCloud
-  Documents.
-- **First-run experience.** A brief, skippable walkthrough plus an optional
-  "load sample project" so the app isn't an empty list on launch.
-- **Data export/import.** Export the catalog (metadata + audio) as a portable
-  bundle for backup or moving between devices before iCloud lands.
-- **Files-app & AirDrop awareness.** Surface audio already shared into the app's
-  Documents folder; accept AirDrop'd audio directly.
+- ✅ **Background audio + lock-screen controls.** `MPNowPlayingInfoCenter` + remote commands.
+- ✅ **Queue & project playback.** "Play in Order" with prev/next.
+- ⛔ **iCloud sync & backup.** CloudKit store + Documents audio sync.
+- ✅ **First-run experience.** Skippable onboarding + optional demo seed.
+- ✅ **Data export/import.** Portable catalog ZIP (metadata + audio). See
+  [CatalogSync](specs/CatalogSync.md). *iCloud is Phase 2.*
+- ⛔ **Files-app & AirDrop awareness.** Surface audio shared into Documents; accept AirDrop.
 
 ---
 
@@ -170,39 +117,19 @@ The things that make people keep their catalog in the app long-term.
 
 A rough order that delivers visible value early and builds toward the vision:
 
-1. ~~**Import-first flow + embedded metadata**~~ — ✅ shipped. The Library's
-   "Import Audio…" action ingests multiple files at once, creating a song +
-   primary "Original" mix each, with title/artist pulled from embedded tags
-   (falling back to the filename).
-2. ~~**Full-screen player with scrubbing + A/B mix compare**~~ — ✅ shipped.
-   Tap the now-playing bar for a full player with a draggable scrubber, ±15s
-   skip, a loop toggle, and a segmented A/B control that swaps mixes without
-   losing position. *(Still open: looping a chosen section rather than the whole
-   track.)*
-3. ~~**Visual release cards (`ImageRenderer`)**~~ — ✅ shipped. Song and project
-   detail screens have a "Share Card" action that renders a polished, on-brand
-   image (square or story format) to a PNG and shares it via the system sheet.
-   *(Still open: brand kit, audiograms, banner preset, pre-save page.)*
-4. ~~**Energy curve graph + badge explanations**~~ — ✅ shipped. The project
-   screen plots BPM across the running order with Swift Charts, marks the peak,
-   and shows a legend explaining the Rise/Fall/Steady badges.
+1. ~~**Import-first flow + embedded metadata**~~ — ✅ shipped.
+2. ~~**Full-screen player with scrubbing + A/B mix compare + section loops**~~ — ✅ shipped.
+3. ~~**Visual release cards + brand kit + audiograms**~~ — ✅ shipped (banner preset still open).
+4. ~~**Energy curve graph + badge explanations + suggest-order preview**~~ — ✅ shipped.
 5. ~~**Background audio + lock-screen controls + project queue**~~ — ✅ shipped.
-   Playback continues in the background; the lock screen / Control Center show
-   metadata with working play, pause, ±15s, scrub, and prev/next; and "Play in
-   Order" plays a project as an auto-advancing queue.
-6. ~~**Harmonic mixing (Camelot wheel)**~~ — ✅ shipped. Key-aware flow analysis
-   flags clashes between adjacent tracks. *(Still open: arc templates and
-   actively suggesting compatible neighbours.)*
-7. **iCloud sync** — makes it trustworthy for a real catalog.
-8. ~~**Auto BPM/key detection**~~ — ✅ shipped (see §4). Runs on import and on
-   demand, pre-filling metadata so users rarely type tempo/key by hand.
-9. ~~**Waveforms**~~ — ✅ shipped. Mixes get a cached waveform (streamed into
-   peak buckets) drawn with `Canvas`; the full player uses it as an interactive
-   scrubber and each mix row shows a mini waveform. *Next:* audiograms built on
-   top of the same peaks.
+6. ~~**Harmonic mixing (Camelot wheel)**~~ — ✅ shipped. *(Arc templates + neighbour suggestions still open.)*
+7. ~~**Auto BPM/key + waveforms + LUFS + release tracking**~~ — ✅ shipped.
+8. ~~**Catalog export/import (pre-iCloud)**~~ — ✅ shipped.
+9. **iCloud sync** — makes it trustworthy for a real catalog long-term.
+10. **Version stack compare UI + arc templates** — deepen daily producer workflows.
 
-Items in §1 (accessibility, swipe actions, delete confirmation, haptics) are
-small enough to fold into whichever release touches the relevant screen.
+Items still in §1 that are 🟡 (device a11y sign-off, version-stack compare) can
+ride along with whichever release touches those screens.
 
 ---
 
@@ -211,16 +138,12 @@ small enough to fold into whichever release touches the relevant screen.
 Prioritized from a hobbyist FL Studio → streaming workflow. Each has a spec in
 [`specs/`](specs/README.md).
 
-| Priority | Feature | Spec | Why it matters |
-|----------|---------|------|----------------|
-| Now | Vocal detection + library filter | [VocalDetection](specs/VocalDetection.md) | Sort beats vs vocal demos without listening to every export |
-| Next | Library polish (filters, swipes, confirm) | [LibraryPolish](specs/LibraryPolish.md) | Daily friction — find 120–128 house tracks in two taps |
-| Next | Version stack (roles, smart import, compare) | [VersionStack](specs/VersionStack.md) | FL exports `_v2_master` land on the right song, not duplicate #4 |
-| Next | Release tracking (date, links, distributor) | [ReleaseTracking](specs/ReleaseTracking.md) | Close the loop after DistroKid/TuneCore upload |
-| Soon | Loudness (LUFS) per mix | [LoudnessAnalysis](specs/LoudnessAnalysis.md) | Catch crushed masters before streaming normalization |
-| Soon | Brand kit for share cards | [BrandKit](specs/BrandKit.md) | Consistent Instagram/Spotify promo look |
-| Soon | Audiogram video export | [AudiogramExport](specs/AudiogramExport.md) | The format that actually gets plays on Stories/TikTok |
-| Later | Sequencing (preview, arcs, transitions) | [SequencingEnhancements](specs/SequencingEnhancements.md) | EP/mixtape order you can trust and remember |
-| Later | Timeline markers (drop, hook) | [TimelineMarkers](specs/TimelineMarkers.md) | Navigate 3-minute beats; better loops and audiogram clips |
-| Later | Catalog export + iCloud sync | [CatalogSync](specs/CatalogSync.md) | Trust — catalog survives device upgrades |
-| Explore | Drop `.flp` for stem paths? | — | FL-specific import if format is tractable without a separation engine |
+| Priority | Feature | Spec | Status |
+|----------|---------|------|--------|
+| Now | Version stack compare + smarter import | [VersionStack](specs/VersionStack.md) | 🟡 partial |
+| Next | Sequencing arcs + transition notes | [SequencingEnhancements](specs/SequencingEnhancements.md) | 🟡 preview shipped |
+| Next | Timeline markers (drop, hook) | [TimelineMarkers](specs/TimelineMarkers.md) | ⛔ |
+| Soon | iCloud catalog sync | [CatalogSync](specs/CatalogSync.md) | 🟡 export/import shipped |
+| Soon | Banner (16:9) share preset | [Sharing](specs/shipped/Sharing.md) | ⛔ |
+| Later | Localization (full String Catalog) | ROADMAP §Platform | 🟡 scaffolding |
+| Explore | Drop `.flp` for stem paths? | — | — |

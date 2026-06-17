@@ -130,6 +130,7 @@ Synthetic signals first; one real mastered MP3 in test bundle optional.
 
 ## Verification
 
-- Target release: post-v1 audio power tools batch
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: `AudioAnalyzer`, `Mix`, `SongDetailView`, `SongImportService`
+- Target release: shipped
+- Last verified: 2026-06-17 (**implemented**)
+- Primary code paths: `LoudnessAnalyzer`, `Mix`, `SongDetailView`, `SongImportService`
+- Tests: `LoudnessAnalyzerTests.swift`

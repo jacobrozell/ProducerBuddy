@@ -10,12 +10,14 @@ class MixStackUITestCase: XCTestCase {
 
     let timeout: TimeInterval = 12
 
+    @MainActor
     override func setUp() {
         super.setUp()
         continueAfterFailure = false
         resetSimulatorOrientationToPortrait()
     }
 
+    @MainActor
     override func tearDown() {
         resetSimulatorOrientationToPortrait()
         XCUIApplication().terminate()
@@ -57,12 +59,14 @@ class MixStackUITestCase: XCTestCase {
         sidebarTab.tap()
     }
 
+    @MainActor
     func resetSimulatorOrientationToPortrait() {
         if XCUIDevice.shared.orientation != .portrait {
             XCUIDevice.shared.orientation = .portrait
         }
     }
 
+    @MainActor
     func rotateToLandscapeLeft(app: XCUIApplication) {
         XCUIDevice.shared.orientation = .landscapeLeft
         RunLoop.current.run(until: Date().addingTimeInterval(0.75))

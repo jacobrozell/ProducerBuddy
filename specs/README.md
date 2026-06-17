@@ -20,6 +20,7 @@ spec per task area (~1–2k tokens). Do not load the full monolith.
 
 - [Architecture](Architecture.md) — layers, dependency rules, module map.
 - [Accessibility](Accessibility.md) — release-gate requirements and screen tracker.
+- [PlatformParity](PlatformParity.md) — engineering bar vs sibling apps.
 
 ## Shipped behavior (`specs/shipped/`)
 
@@ -31,27 +32,34 @@ spec per task area (~1–2k tokens). Do not load the full monolith.
 | [SongsAndMixes](shipped/SongsAndMixes.md) | Detail, editor, primary mix |
 | [AudioAnalysis](shipped/AudioAnalysis.md) | BPM & key (`AudioAnalyzer`) |
 | [VocalDetection](VocalDetection.md) | Vocals + confidence (same analyzer) |
-| [Playback](shipped/Playback.md) | Player, queue, A/B, lock screen |
+| [Playback](shipped/Playback.md) | Player, queue, A/B, loops, lock screen |
 | [Waveforms](shipped/Waveforms.md) | Generate, cache, scrub |
 | [ProjectsAndSequencing](shipped/ProjectsAndSequencing.md) | Flow analysis, suggest order |
-| [Sharing](shipped/Sharing.md) | PNG cards, text share |
-| [Platform](shipped/Platform.md) | Settings, gating, tests |
-| [Library Polish](LibraryPolish.md) | Filters, swipes, import progress (shipped) |
+| [Sharing](shipped/Sharing.md) | PNG cards, brand kit, text share |
+| [Platform](shipped/Platform.md) | Settings, gating, catalog backup, tests |
 
-## Planned features (not shipped)
+## Shipped features (full specs at repo root)
 
-- [Version Stack](VersionStack.md) — mix roles, **export prefix** matching, version stack UI (🟡 Phase 1–2A/B shipped).
-- [Release Tracking](ReleaseTracking.md) — release dates, distributor, links.
-- [Brand Kit](BrandKit.md) — accent, logo for share cards.
-- [Audiogram Export](AudiogramExport.md) — story/square video teasers.
-- [Loudness Analysis](LoudnessAnalysis.md) — LUFS per mix.
-- [Sequencing Enhancements](SequencingEnhancements.md) — suggest preview, arcs, transitions.
-- [Timeline Markers](TimelineMarkers.md) — drop/hook markers.
-- [Catalog Sync & Backup](CatalogSync.md) — export/import, iCloud.
+These behaviors ship; detailed specs live alongside planned work:
+
+| Spec | Topic | Status |
+|------|-------|--------|
+| [LibraryPolish](LibraryPolish.md) | Filters, swipes, import progress | ✅ |
+| [ReleaseTracking](ReleaseTracking.md) | Release date, distributor, links | ✅ |
+| [BrandKit](BrandKit.md) | Accent, logo, tagline for share surfaces | ✅ |
+| [AudiogramExport](AudiogramExport.md) | Story/square MP4 teasers | ✅ |
+| [LoudnessAnalysis](LoudnessAnalysis.md) | LUFS per mix | ✅ |
+| [CatalogSync](CatalogSync.md) | Export/import ZIP | 🟡 Phase 1 ✅; iCloud ⛔ |
+
+## Planned / partial features
+
+- [Version Stack](VersionStack.md) — mix roles, export prefix, resolution sheet (🟡 compare UI open).
+- [Sequencing Enhancements](SequencingEnhancements.md) — arc templates, transitions (🟡 suggest preview ✅).
+- [Timeline Markers](TimelineMarkers.md) — drop/hook markers (⛔).
 
 ## Conventions
 
 - Each shipped spec ends with a **Verification** block: date + code paths + tests.
 - Planned specs end with **Verification** when implemented.
 - New user-visible strings land in every bundled locale at once (currently `en`
-  only; see ROADMAP §Localization).
+  only; `L10n` scaffolding exists).

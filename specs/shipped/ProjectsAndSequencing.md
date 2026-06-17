@@ -66,7 +66,8 @@ For >2 tracks:
 2. Peak = top third (min 1 track)
 3. Return: body ascending + peak reversed
 
-Applied immediately in `ProjectDetailView.suggestOrder()` (no preview UI).
+Applied via `SuggestOrderPreviewSheet` — shows `orderMoves` diff and new order
+before commit (`ProjectDetailView`).
 
 ### peakIndex
 
@@ -75,12 +76,12 @@ Highest BPM; ties → earliest index. Used by `EnergyCurveChart`.
 ## UI components
 
 - `EnergyCurveChart` — Swift Charts BPM line/area, orange peak marker
-- `TrackFlowRow` — position, title, BPM, Camelot, delta, clash/warning icons, move badge
+- `TrackFlowRow` — position, title, BPM, Camelot, delta, clash/warning icons, move badge (tap for popover)
 - `FlowLegend` — explains badges under chart
 - `AddTracksView` — pick library songs not in project
 
 ## Verification
 
-- Last verified: 2026-06-16
-- Code: `ProjectListView`, `ProjectDetailView`, `ProjectEditorView`, `AddTracksView`, `SequencingEngine`, `EnergyCurveChart`, `TrackFlowRow`, `FlowLegend`
+- Last verified: 2026-06-17
+- Code: `ProjectListView`, `ProjectDetailView`, `SuggestOrderPreviewSheet`, `SequencingEngine`, `EnergyCurveChart`, `TrackFlowRow`, `FlowLegend`
 - Tests: `SequencingEngineTests.swift`

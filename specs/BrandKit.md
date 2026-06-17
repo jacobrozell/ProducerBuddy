@@ -97,6 +97,7 @@ jarring UI recolors.
 
 ## Verification
 
-- Target release: with Share Card v2 polish (after basic card ships ✅)
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: `SettingsView`, `ShareCardView`, `ReleaseCardRenderer`
+- Target release: shipped with share cards v2
+- Last verified: 2026-06-17 (**implemented**)
+- Primary code paths: `BrandKitStore`, `SettingsView`, `ShareCardView`, `AudiogramRenderer`
+- Tests: `ShareCardTests.swift`

@@ -97,7 +97,6 @@ Depends on: waveforms (`Mix.waveformPeaks` ✅), Brand Kit (`BrandKit.md`).
 
 ## Verification
 
-- Target release: post-v1 (after Brand Kit + section markers optional)
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: `AudiogramRenderer`, `FullPlayerView`, `SongDetailView`,
-  `ShareCardView`, `BrandKit`
+- Target release: shipped
+- Last verified: 2026-06-17 (**implemented**)
+- Primary code paths: `AudiogramRenderer`, `AudiogramExportSheet`, `FullPlayerView`, `ShareCardView`, `BrandKitStore`

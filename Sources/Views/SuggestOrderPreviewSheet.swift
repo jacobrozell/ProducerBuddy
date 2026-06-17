@@ -53,6 +53,7 @@ struct SuggestOrderPreviewSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Apply") {
+                        Haptics.success()
                         onApply()
                         dismiss()
                     }

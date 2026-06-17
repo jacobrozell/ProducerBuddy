@@ -140,6 +140,7 @@ show a subtle "Add release info" banner when category is released but date is ni
 
 ## Verification
 
-- Target release: post-v1 (after Library polish + vocal detection ship)
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: `Song`, `SongEditorView`, `SongDetailView`, `ProjectDetailView`
+- Target release: shipped
+- Last verified: 2026-06-17 (**implemented**)
+- Primary code paths: `Song`, `SongEditorView`, `SongDetailView`, `ProjectDetailView`, `ReleaseInfoCard`
+- Tests: `ReleaseTrackingTests.swift`

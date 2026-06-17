@@ -10,7 +10,7 @@ Text blurbs and rendered PNG release cards.
 
 ```
 🎵 {title} · by {artist} · {bpm} BPM · {genre}
-Made with ProducerBuddy
+Made with MixStack
 ```
 
 **Project** (`ProjectDetailView.tracklistText`):
@@ -18,7 +18,7 @@ Made with ProducerBuddy
 ```
 {title} — {kind}
 1. Track…
-Made with ProducerBuddy
+Made with MixStack
 ```
 
 ## Visual share cards
@@ -42,10 +42,18 @@ ShareCardSheet → ShareCardView (preview)
 
 ### ShareCardView (`Sources/Components/ShareCardView.swift`)
 
-Fixed frame `format.size`. Gradient from `song.category.tint` or accent.
+Fixed frame `format.size`. Gradient from brand accent or `song.category.tint`.
+
+Brand kit (`BrandKitSettings`) supplies accent, logo, tagline, card style, and
+footer credit line on cards and audiograms.
 
 - **Song:** title, artist, BPM/key/genre pills
 - **Project:** title, subtitle, tracklist (5 square / 12 story), "+ N more"
+
+### Audiogram export
+
+Gated: `ReleaseSurface.audiograms`. `AudiogramExportSheet` → `AudiogramRenderer`
+→ branded MP4 with animated waveform. See [AudiogramExport](../AudiogramExport.md).
 
 ### ShareCardSheet
 
@@ -57,6 +65,6 @@ Segmented format picker. `.task(id: format)` re-renders PNG.
 
 ## Verification
 
-- Last verified: 2026-06-16
-- Code: `ShareCardView`, `ShareCardSheet`, `ReleaseCardRenderer`
+- Last verified: 2026-06-17
+- Code: `ShareCardView`, `ShareCardSheet`, `ReleaseCardRenderer`, `BrandKitStore`, `AudiogramRenderer`
 - Tests: `ShareCardTests.swift`

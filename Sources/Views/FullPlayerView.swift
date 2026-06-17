@@ -205,6 +205,7 @@ struct FullPlayerView: View {
         let isSelected = audioPlayer.currentMix?.id == mix.id
         return Button {
             if audioPlayer.currentMix?.id != mix.id {
+                Haptics.tap()
                 audioPlayer.switchMix(to: mix)
             }
         } label: {

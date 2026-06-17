@@ -21,9 +21,12 @@ static func isEnabled(_ shipDefault: Bool) -> Bool {
 | Section | Keys / behavior |
 |---------|-----------------|
 | Appearance | `@AppStorage("appearance")` → `AppAppearance` |
+| Brand Kit | Accent, logo, tagline, card style (`BrandKitStore`) |
+| Import | Version-stack preferences (`versionImport.*` keys) |
+| Catalog | Export/import ZIP (`SettingsCatalogSection`) |
 | Feedback | `@AppStorage("hapticsEnabled")` |
 | About | `AppLinks` (privacy, support, a11y, tip jar), replay onboarding, version |
-| Data | Load demo tracks; delete all with confirmation |
+| Data | Load demo tracks; organize library; delete all with confirmation |
 
 `deleteAllData()` — stop player, delete all songs/projects, remove audio files.
 
@@ -54,24 +57,31 @@ Full gate requirements: [Accessibility](../Accessibility.md).
 
 Localization, iCloud, schema migrations, repository/DI layer.
 
-## Tests (57 total, 2026-06-16)
+## Tests (2026-06-17)
+
+**116** unit tests (`MixStackCI`) + **10** UI tests across four schemes.
+Full gate: `bash Scripts/ci/verify-local.sh`.
 
 | File | Area |
 |------|------|
 | `AudioAnalyzerTests` | BPM/key |
+| `LoudnessAnalyzerTests` | LUFS |
 | `VocalDetectionTests` | Vocals |
 | `SequencingEngineTests` | Flow/suggest |
 | `WaveformTests` | Peaks |
-| `AudioPlayerTests` | Queue/A/B |
+| `AudioPlayerTests` | Queue/A/B/loops |
 | `SongImportServiceTests` | Import |
 | `ShareCardTests` | Cards |
+| `CatalogSyncTests` | Export/import |
+| `ReleaseTrackingTests` | Release fields |
+| `VersionStackTests` | Prefix/import |
 | `ModelTests` | Models |
 | `SupportTests` | Helpers |
 
-Build: `ProducerBuddy` scheme, simulator.
+Build: `MixStack` / `MixStackCI` scheme, iOS 18 simulator.
 
 ## Verification
 
-- Last verified: 2026-06-16
+- Last verified: 2026-06-17
 - Code: `SettingsView`, `ReleaseSurface`, `DemoAudioSeeder`, `Haptics`, `AppLinks`, `A11yID`, `AppAppearance`
 - Tests: `SupportTests.swift`

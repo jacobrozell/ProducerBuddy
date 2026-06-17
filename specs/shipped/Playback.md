@@ -13,7 +13,8 @@ buttons, and project queue.
 |----------|---------|
 | `currentMix` | Loaded mix |
 | `isPlaying`, `currentTime`, `duration` | Transport (timer 0.25s) |
-| `isLooping` | `numberOfLoops = -1` when true |
+| `isLooping` | Whole-track loop (`numberOfLoops = -1`) |
+| `loopMode` | Off, whole track, or section bounds |
 | `queue`, `queueIndex` | Project playback |
 | `hasNext`, `hasPrevious` | Queue nav |
 
@@ -41,8 +42,8 @@ Clears player, queue, `MPNowPlayingInfoCenter`.
 
 ### NowPlayingBar (`Sources/Components/NowPlayingBar.swift`)
 
-Progress, title/mix, time, play/pause, stop. Tap row → `FullPlayerView` sheet.
-`Haptics.tap()` on play/pause.
+Draggable scrubber slider, title/mix, time, play/pause, stop. Tap row →
+`FullPlayerView` sheet. `Haptics.tap()` on play/pause, scrub release, stop.
 
 ### FullPlayerView (`Sources/Views/FullPlayerView.swift`)
 
@@ -51,8 +52,9 @@ Progress, title/mix, time, play/pause, stop. Tap row → `FullPlayerView` sheet.
 | Waveform scrubber | `WaveformView` + `onSeek` |
 | ±15s | when `queue.isEmpty` |
 | Prev/next | when queue active |
-| Loop | binds `isLooping` |
-| Mix picker | segmented; `switchMix` when >1 mix |
+| Loop | `PlayerLoopControls` — off / track / section |
+| Mix picker | chips; `switchMix` when >1 mix |
+| Audiogram | menu → `AudiogramExportSheet` when `ReleaseSurface.audiograms` |
 
 `ensureWaveform()` backfills missing `mix.waveform` on appear.
 
@@ -70,6 +72,6 @@ Info.plist `audio` background mode required.
 
 ## Verification
 
-- Last verified: 2026-06-16
-- Code: `AudioPlayer.swift`, `NowPlayingBar.swift`, `FullPlayerView.swift`
-- Tests: `AudioPlayerTests.swift`
+- Last verified: 2026-06-17
+- Code: `AudioPlayer.swift`, `NowPlayingBar.swift`, `FullPlayerView.swift`, `PlayerLoopControls.swift`
+- Tests: `AudioPlayerTests.swift`, `PlaybackLoopLogicTests.swift`

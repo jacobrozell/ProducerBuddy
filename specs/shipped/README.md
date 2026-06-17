@@ -9,15 +9,16 @@ and lists primary code paths at the bottom.
 |------------------------|------|
 | Tabs, onboarding, app entry, demo seed | [AppShell](AppShell.md) |
 | SwiftData models, relationships, enums | [DataModel](DataModel.md) |
-| Library list, filters, import audio | [LibraryAndImport](LibraryAndImport.md) |
-| Song detail, editor, mixes, primary mix | [SongsAndMixes](SongsAndMixes.md) |
+| Library list, filters, import audio | [LibraryAndImport](LibraryAndImport.md) · [LibraryPolish](../LibraryPolish.md) |
+| Song detail, editor, mixes, release fields | [SongsAndMixes](SongsAndMixes.md) · [ReleaseTracking](../ReleaseTracking.md) |
 | BPM/key detection, `AudioAnalyzer` | [AudioAnalysis](AudioAnalysis.md) |
+| LUFS loudness | [LoudnessAnalysis](../LoudnessAnalysis.md) |
 | Vocal detection, confidence meter, vocal filter | [VocalDetection](../VocalDetection.md) |
-| Player, queue, A/B, lock screen | [Playback](Playback.md) |
+| Player, queue, A/B, section loops, lock screen | [Playback](Playback.md) |
 | Waveform generate/draw/scrub | [Waveforms](Waveforms.md) |
-| Projects, sequencing, energy curve | [ProjectsAndSequencing](ProjectsAndSequencing.md) |
-| Share cards, text share | [Sharing](Sharing.md) |
-| Settings, haptics, release gating, tests | [Platform](Platform.md) |
+| Projects, sequencing, energy curve, suggest preview | [ProjectsAndSequencing](ProjectsAndSequencing.md) |
+| Share cards, brand kit, audiograms, text share | [Sharing](Sharing.md) · [BrandKit](../BrandKit.md) · [AudiogramExport](../AudiogramExport.md) |
+| Settings, catalog export/import, haptics, tests | [Platform](Platform.md) · [CatalogSync](../CatalogSync.md) |
 | Layers, dependency rules | [Architecture](../Architecture.md) |
 | What ships vs not | [feature-inventory](../../docs/feature-inventory.md) |
 | Future work | [ROADMAP](../../ROADMAP.md) |

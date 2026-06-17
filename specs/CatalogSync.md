@@ -109,7 +109,7 @@ Version migrations documented in `Architecture.md` when schema versioning ships.
 
 ## Verification
 
-- Target release: Phase 1 pre-iCloud; Phase 2 when schema migration ready
-- Last verified: 2026-06-16 (spec only; **not implemented**)
-- Primary code paths: new `CatalogExportService`, `SettingsView`, SwiftData
-  container config
+- Target release: Phase 1 shipped; Phase 2 (iCloud) planned
+- Last verified: 2026-06-17 (**Phase 1 implemented** — ZIP export/import)
+- Primary code paths: `CatalogExporter`, `CatalogImporter`, `SettingsCatalogSection`, `ZipArchive`
+- Tests: `CatalogSyncTests.swift`

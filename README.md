@@ -35,8 +35,13 @@ MixStack follows a producer's workflow from raw idea to release:
 - **Project playback** — "Play in Order" plays a whole project as an
   auto-advancing queue, with prev/next in the full player and on the lock screen.
 - **Visual sharing** — Generate a clean, on-brand **release card** image (square
-  or story format) for any song or project via `ImageRenderer`, or share a text
-  blurb / tracklist — all through the system share sheet.
+  or story format) for any song or project via `ImageRenderer`, customize the
+  look with a **brand kit** (accent, logo, tagline), export **audiogram** video
+  teasers, or share a text blurb / tracklist — all through the system share sheet.
+- **Release tracking** — Record release dates, distributor, and streaming links
+  per song; see release progress on projects.
+- **Catalog backup** — Export and import your full library as a portable ZIP
+  (metadata + audio) from Settings.
 
 ## Project layout
 
@@ -88,8 +93,5 @@ xcodebuild test -scheme MixStack \
 
 ## Where it's headed
 
-See **[ROADMAP.md](ROADMAP.md)** for a user-centered look at UX polish and
-planned features — prioritized by impact, from quick wins (import-first flow,
-full-screen scrubbing player, A/B mix compare) to the brief's headline ask
-(generated visual release cards for social) and deeper bets (harmonic-mixing
-sequencer, energy-curve charts, background audio, iCloud sync).
+See **[ROADMAP.md](ROADMAP.md)** for what's next — iCloud sync, version-stack
+compare UI, sequencing arc templates, banner share preset, and full localization.

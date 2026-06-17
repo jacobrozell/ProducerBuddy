@@ -15,6 +15,7 @@ struct AudiogramExportSheet: View {
     @State private var isExporting = false
     @State private var exportProgress: Double = 0
     @State private var errorMessage: String?
+    @State private var exportTask: Task<Void, Never>?
 
     private let durationOptions = [15, 20, 30]
 
@@ -74,6 +75,9 @@ struct AudiogramExportSheet: View {
                         Text("Rendering audiogram…")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Button("Cancel", role: .cancel) {
+                            cancelExport()
+                        }
                     } else if let exportedURL {
                         ShareLink(item: exportedURL) {
                             Label("Share Video", systemImage: "square.and.arrow.up")
@@ -103,6 +107,10 @@ struct AudiogramExportSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .onDisappear {
+            cancelExport()
+            removeExportedFile()
+        }
     }
 
     private var errorPresented: Binding<Bool> {
@@ -114,32 +122,53 @@ struct AudiogramExportSheet: View {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
+    private func removeExportedFile() {
+        guard let exportedURL else { return }
+        try? FileManager.default.removeItem(at: exportedURL)
+        self.exportedURL = nil
+    }
+
+    private func cancelExport() {
+        exportTask?.cancel()
+        exportTask = nil
+        isExporting = false
+    }
+
     private func exportAudiogram() {
+        removeExportedFile()
         isExporting = true
         exportProgress = 0
-        exportedURL = nil
 
-        let request = AudiogramRenderer.Request(
+        let request = AudiogramRenderer.Request.make(
             mix: mix,
             song: song,
-            startTime: startTime,
-            duration: exportDuration,
-            format: format,
-            brand: BrandKitSettings.current(),
-            reduceMotion: reduceMotion
+            options: AudiogramRenderer.ExportOptions(
+                startTime: startTime,
+                duration: exportDuration,
+                format: format,
+                reduceMotion: reduceMotion
+            ),
+            brand: BrandKitSettings.current()
         )
 
-        Task { @MainActor in
+        exportTask = Task { @MainActor in
             do {
                 let url = try await AudiogramRenderer.export(request) { value in
                     Task { @MainActor in exportProgress = value }
                 }
+                guard !Task.isCancelled else {
+                    try? FileManager.default.removeItem(at: url)
+                    return
+                }
                 exportedURL = url
                 Haptics.success()
+            } catch is CancellationError {
+                // User cancelled — no error alert.
             } catch {
                 errorMessage = "Couldn't render the video. Try a shorter snippet."
             }
             isExporting = false
+            exportTask = nil
         }
     }
 }

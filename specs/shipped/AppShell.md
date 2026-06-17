@@ -4,7 +4,7 @@ Navigation, bootstrap, and shared environment.
 
 ## Entry
 
-`ProducerBuddyApp` (`Sources/ProducerBuddyApp.swift`):
+`MixStackApp` (`Sources/MixStackApp.swift`):
 
 1. Creates `ModelContainer` for `Song`, `Mix`, `Project`, `ProjectTrack`
 2. Creates `@State audioPlayer = AudioPlayer()`
@@ -47,6 +47,6 @@ Import → Library → Song detail → Project → Share
 
 ## Verification
 
-- Last verified: 2026-06-16
-- Code: `ProducerBuddyApp.swift`, `RootView.swift`, `OnboardingView.swift`
+- Last verified: 2026-06-17
+- Code: `MixStackApp.swift`, `RootView.swift`, `OnboardingView.swift`
 - Tests: `SupportTests` (surface gating)
