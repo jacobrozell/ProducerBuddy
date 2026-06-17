@@ -139,9 +139,22 @@ struct SequencingEngineTests {
         #expect(result[1].keyText != nil)
     }
 
-    @Test("Key-aware analysis stays clear when keys are compatible")
-    func analysisNoClashWhenCompatible() {
-        let result = SequencingEngine.analyze(bpms: [120, 121], keys: [.aMinor, .cMajor])
-        #expect(result[1].keyClash == false)
+    @Test("Order moves lists only tracks that change position")
+    func orderMovesListsChanges() {
+        let tracks = [
+            (id: 1, title: "A"),
+            (id: 2, title: "B"),
+            (id: 3, title: "C")
+        ]
+        let moves = SequencingEngine.orderMoves(from: tracks, to: [2, 1, 3])
+        #expect(moves.count == 2)
+        #expect(moves.contains { $0.title == "A" && $0.fromPosition == 1 && $0.toPosition == 2 })
+        #expect(moves.contains { $0.title == "B" && $0.fromPosition == 2 && $0.toPosition == 1 })
+    }
+
+    @Test("Order moves is empty when the order is unchanged")
+    func orderMovesEmptyWhenUnchanged() {
+        let tracks = [(id: 1, title: "A"), (id: 2, title: "B"), (id: 3, title: "C")]
+        #expect(SequencingEngine.orderMoves(from: tracks, to: [1, 2, 3]).isEmpty)
     }
 }

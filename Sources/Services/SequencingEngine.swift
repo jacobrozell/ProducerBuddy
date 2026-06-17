@@ -26,6 +26,30 @@ enum EnergyMove: String, Sendable {
         case .steady: return "arrow.right"
         }
     }
+
+    /// Plain-language copy for the tap-to-explain badge popover.
+    var explanation: String {
+        switch self {
+        case .opener:
+            return "The first track — sets the tone with no prior tempo to compare."
+        case .rise:
+            return "Faster than the previous track — energy is building."
+        case .fall:
+            return "Slower than the previous track — energy is easing off."
+        case .steady:
+            return "About the same tempo as the previous track — a smooth handoff."
+        }
+    }
+}
+
+/// One track that would move when applying a suggested running order.
+struct OrderMoveChange: Identifiable, Sendable {
+    let id: UUID
+    let title: String
+    /// 1-based position in the current running order.
+    let fromPosition: Int
+    /// 1-based position in the suggested running order.
+    let toPosition: Int
 }
 
 /// The engine's read on a single track in the context of its neighbours.
@@ -177,5 +201,30 @@ enum SequencingEngine {
         let peak = ascending.suffix(peakCount).reversed()
 
         return body.map(\.id) + peak.map(\.id)
+    }
+
+    /// Tracks that would change position when moving from the current order to
+    /// `suggestedIDs`. Positions are 1-based for display.
+    static func orderMoves<ID: Hashable>(
+        from tracks: [(id: ID, title: String)],
+        to suggestedIDs: [ID]
+    ) -> [OrderMoveChange] {
+        let currentIndex = Dictionary(uniqueKeysWithValues: tracks.enumerated().map { ($0.element.id, $0.offset) })
+        var moves: [OrderMoveChange] = []
+
+        for (newIndex, id) in suggestedIDs.enumerated() {
+            guard let oldIndex = currentIndex[id], oldIndex != newIndex else { continue }
+            guard let title = tracks.first(where: { $0.id == id })?.title else { continue }
+            moves.append(
+                OrderMoveChange(
+                    id: UUID(),
+                    title: title,
+                    fromPosition: oldIndex + 1,
+                    toPosition: newIndex + 1
+                )
+            )
+        }
+
+        return moves.sorted { $0.fromPosition < $1.fromPosition }
     }
 }

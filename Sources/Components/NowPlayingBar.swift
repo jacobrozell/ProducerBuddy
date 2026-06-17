@@ -6,6 +6,8 @@ struct NowPlayingBar: View {
     @Environment(AudioPlayer.self) private var audioPlayer
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showingFullPlayer = false
+    @State private var scrubValue: Double = 0
+    @State private var isScrubbing = false
 
     private var compactHeight: Bool {
         AdaptiveLayout.isCompactHeight(verticalSizeClass)
@@ -13,10 +15,7 @@ struct NowPlayingBar: View {
 
     var body: some View {
         VStack(spacing: compactHeight ? 4 : 6) {
-            ProgressView(value: progress)
-                .tint(Brand.accent)
-                .accessibilityLabel("Playback progress")
-                .accessibilityValue(timeLabel)
+            scrubber
 
             HStack(spacing: 12) {
                 trackSummary
@@ -30,6 +29,34 @@ struct NowPlayingBar: View {
         .sheet(isPresented: $showingFullPlayer) {
             FullPlayerView()
         }
+        .onChange(of: audioPlayer.currentTime) { _, newValue in
+            guard !isScrubbing else { return }
+            scrubValue = newValue
+        }
+        .onChange(of: audioPlayer.currentMix?.id) { _, _ in
+            scrubValue = audioPlayer.currentTime
+        }
+        .onAppear {
+            scrubValue = audioPlayer.currentTime
+        }
+    }
+
+    private var scrubber: some View {
+        Slider(
+            value: $scrubValue,
+            in: 0...max(audioPlayer.duration, 0.01),
+            onEditingChanged: { editing in
+                isScrubbing = editing
+                if !editing {
+                    audioPlayer.seek(to: scrubValue)
+                    Haptics.tap()
+                }
+            }
+        )
+        .tint(Brand.accent)
+        .accessibilityLabel("Playback progress")
+        .accessibilityValue(timeLabel)
+        .accessibilityIdentifier(A11yID.Player.scrubber)
     }
 
     private var trackSummary: some View {
@@ -93,16 +120,11 @@ struct NowPlayingBar: View {
         }
     }
 
-    private var progress: Double {
-        guard audioPlayer.duration > 0 else { return 0 }
-        return audioPlayer.currentTime / audioPlayer.duration
-    }
-
     private var timeLabel: String {
         func fmt(_ time: Double) -> String {
             let totalSeconds = Int(time.rounded())
             return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
         }
-        return "\(fmt(audioPlayer.currentTime)) of \(fmt(audioPlayer.duration))"
+        return "\(fmt(scrubValue)) of \(fmt(audioPlayer.duration))"
     }
 }

@@ -7,7 +7,7 @@ struct StarRatingView: View {
     var isEditable: Bool = true
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: isEditable ? 6 : 4) {
             ForEach(1...5, id: \.self) { star in
                 starButton(star)
             }
@@ -39,6 +39,6 @@ struct StarRatingView: View {
     private func starImage(_ star: Int) -> some View {
         Image(systemName: star <= rating ? "star.fill" : "star")
             .foregroundStyle(star <= rating ? .yellow : .secondary)
-            .font(.body)
+            .font(isEditable ? .title3 : .body)
     }
 }

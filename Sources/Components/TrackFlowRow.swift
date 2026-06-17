@@ -7,6 +7,11 @@ struct TrackFlowRow: View {
     let position: Int
     let song: Song?
     let analysis: FlowAnalysis
+    var showWorkflowBadge = false
+
+    @State private var showingMoveInfo = false
+    @State private var showingWarningInfo = false
+    @State private var showingKeyInfo = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -34,16 +39,44 @@ struct TrackFlowRow: View {
 
             Spacer()
 
+            if showWorkflowBadge, let song, song.category != .released {
+                CategoryBadge(category: song.category)
+            }
+
             if analysis.keyClash {
-                Image(systemName: "music.note")
-                    .foregroundStyle(.orange)
-                    .help(analysis.keyText ?? "Key clash with previous track")
+                Button {
+                    showingKeyInfo = true
+                } label: {
+                    Image(systemName: "music.note")
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+                .minimumTapTarget(36)
+                .accessibilityLabel(analysis.keyText ?? "Key clash with previous track")
+                .popover(isPresented: $showingKeyInfo) {
+                    badgePopover(
+                        title: "Key Clash",
+                        message: analysis.keyText ?? "This key may not mix smoothly with the previous track."
+                    )
+                }
             }
 
             if analysis.hasWarning {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                    .help(analysis.warningText ?? "")
+                Button {
+                    showingWarningInfo = true
+                } label: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+                .minimumTapTarget(36)
+                .accessibilityLabel(analysis.warningText ?? "Abrupt BPM jump")
+                .popover(isPresented: $showingWarningInfo) {
+                    badgePopover(
+                        title: "Abrupt Jump",
+                        message: analysis.warningText ?? "Large tempo change from the previous track."
+                    )
+                }
             }
 
             moveBadge
@@ -52,13 +85,37 @@ struct TrackFlowRow: View {
     }
 
     private var moveBadge: some View {
-        Label(analysis.move.displayName, systemImage: analysis.move.symbolName)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(moveTint.opacity(0.18), in: Capsule())
-            .foregroundStyle(moveTint)
-            .labelStyle(.titleAndIcon)
+        Button {
+            showingMoveInfo = true
+        } label: {
+            Label(analysis.move.displayName, systemImage: analysis.move.symbolName)
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(moveTint.opacity(0.18), in: Capsule())
+                .foregroundStyle(moveTint)
+                .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(analysis.move.displayName), \(analysis.move.explanation)")
+        .accessibilityHint("Shows explanation")
+        .popover(isPresented: $showingMoveInfo) {
+            badgePopover(title: analysis.move.displayName, message: analysis.move.explanation)
+        }
+    }
+
+    private func badgePopover(title: String, message: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding()
+        .frame(maxWidth: 280)
+        .presentationCompactAdaptation(.popover)
     }
 
     private var deltaLabel: String {

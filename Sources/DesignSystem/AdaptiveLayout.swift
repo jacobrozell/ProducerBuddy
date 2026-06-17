@@ -95,13 +95,17 @@ extension View {
             .contentShape(Rectangle())
     }
 
-    /// Sidebar selection tint for split-view lists.
+    /// Sidebar selection tint and VoiceOver selected state for split-view lists.
     @ViewBuilder
     func listSidebarSelection(isSelected: Bool, enabled: Bool) -> some View {
-        if enabled, isSelected {
-            listRowBackground(Brand.accentMuted)
-        } else {
-            self
+        let selected = enabled && isSelected
+        Group {
+            if selected {
+                listRowBackground(Brand.accentMuted)
+            } else {
+                self
+            }
         }
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

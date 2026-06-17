@@ -12,6 +12,9 @@ struct ProjectDetailView: View {
     @State private var showingEditor = false
     @State private var showingAddTracks = false
     @State private var showingShareCard = false
+    @State private var pendingSuggestedIDs: [UUID]?
+    @State private var pendingOrderMoves: [OrderMoveChange] = []
+    @State private var pendingSuggestedTitles: [String] = []
 
     var body: some View {
         List {
@@ -37,7 +40,7 @@ struct ProjectDetailView: View {
                     Button("Play in Order", systemImage: "play.fill") { playProject() }
                         .disabled(playableMixes.isEmpty)
                     Button("Add Tracks", systemImage: "plus") { showingAddTracks = true }
-                    Button("Suggest Order", systemImage: "wand.and.stars") { suggestOrder() }
+                    Button("Suggest Order", systemImage: "wand.and.stars") { prepareSuggestOrder() }
                         .disabled(project.tracks.count < 3)
                         .accessibilityIdentifier(A11yID.Project.suggestOrder)
                     Button("Edit Project", systemImage: "pencil") { showingEditor = true }
@@ -63,6 +66,20 @@ struct ProjectDetailView: View {
         .sheet(isPresented: $showingShareCard) {
             ShareCardSheet(content: .project(project))
         }
+        .sheet(isPresented: suggestOrderPreviewPresented) {
+            SuggestOrderPreviewSheet(
+                moves: pendingOrderMoves,
+                suggestedTitles: pendingSuggestedTitles,
+                onApply: applySuggestedOrder
+            )
+        }
+    }
+
+    private var suggestOrderPreviewPresented: Binding<Bool> {
+        Binding(
+            get: { pendingSuggestedIDs != nil },
+            set: { if !$0 { clearSuggestOrderPreview() } }
+        )
     }
 
     private var summarySection: some View {
@@ -94,6 +111,16 @@ struct ProjectDetailView: View {
                 stat(value: "\(project.tracks.count)", label: "Tracks")
                 stat(value: runtime, label: "Runtime")
                 stat(value: project.kind.displayName, label: "Type")
+            }
+
+            if project.totalTrackCount > 0 {
+                Label(
+                    "\(project.releasedTrackCount) of \(project.totalTrackCount) tracks released",
+                    systemImage: project.isFullyReleased ? "checkmark.seal.fill" : "calendar"
+                )
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(project.isFullyReleased ? .green : .secondary)
+                .accessibilityIdentifier(A11yID.Project.releaseProgress)
             }
         }
     }
@@ -137,7 +164,8 @@ struct ProjectDetailView: View {
                     TrackFlowRow(
                         position: track.position + 1,
                         song: track.song,
-                        analysis: analysis
+                        analysis: analysis,
+                        showWorkflowBadge: track.song?.category != .released
                     )
                 }
                 .onMove(perform: moveTracks)
@@ -195,6 +223,7 @@ struct ProjectDetailView: View {
         var tracks = orderedTracks
         tracks.move(fromOffsets: source, toOffset: destination)
         renumber(tracks)
+        Haptics.tap()
     }
 
     private func deleteTracks(at offsets: IndexSet) {
@@ -207,14 +236,35 @@ struct ProjectDetailView: View {
         renumber(tracks)
     }
 
-    private func suggestOrder() {
-        let pairs = orderedTracks.map { (id: $0.id, bpm: $0.song?.bpm ?? 0) }
-        let suggested = SequencingEngine.suggestOrder(for: pairs)
+    private func prepareSuggestOrder() {
+        let tracks = orderedTracks
+        let pairs = tracks.map { (id: $0.id, bpm: $0.song?.bpm ?? 0) }
+        let suggestedIDs = SequencingEngine.suggestOrder(for: pairs)
+        let labeled = tracks.map { (id: $0.id, title: $0.song?.title ?? "Untitled") }
+        let moves = SequencingEngine.orderMoves(from: labeled, to: suggestedIDs)
+        guard !moves.isEmpty else { return }
+
+        let byID = Dictionary(uniqueKeysWithValues: tracks.map { ($0.id, $0) })
+        pendingSuggestedIDs = suggestedIDs
+        pendingOrderMoves = moves
+        pendingSuggestedTitles = suggestedIDs.compactMap { byID[$0]?.song?.title ?? "Untitled" }
+    }
+
+    private func applySuggestedOrder() {
+        guard let suggestedIDs = pendingSuggestedIDs else { return }
         let byID = Dictionary(uniqueKeysWithValues: orderedTracks.map { ($0.id, $0) })
-        let reordered = suggested.compactMap { byID[$0] }
+        let reordered = suggestedIDs.compactMap { byID[$0] }
         withAnimation {
             renumber(reordered)
         }
+        Haptics.success()
+        clearSuggestOrderPreview()
+    }
+
+    private func clearSuggestOrderPreview() {
+        pendingSuggestedIDs = nil
+        pendingOrderMoves = []
+        pendingSuggestedTitles = []
     }
 
     /// Writes sequential positions back onto the tracks in the given order.
