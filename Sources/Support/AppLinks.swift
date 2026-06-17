@@ -16,5 +16,5 @@ enum AppLinks {
     static let appStoreReview: URL? = nil
 
     /// Optional "buy me a coffee"-style tip link. `nil` hides the row entirely.
-    static let tipJar: URL? = nil
+    static let tipJar: URL? = URL(string: "https://buymeacoffee.com/jacobrozelq")
 }

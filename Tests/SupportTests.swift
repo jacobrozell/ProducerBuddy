@@ -26,9 +26,13 @@ struct SupportTests {
         #expect(AppLinks.accessibility.scheme == "https")
     }
 
-    @Test("Optional tip jar is hidden until configured")
-    func tipJarOptional() {
-        // Defaults to nil so the Settings row stays hidden.
-        #expect(AppLinks.tipJar == nil)
+    @Test("Tip jar link is configured and secure")
+    func tipJarConfigured() {
+        guard let tipJar = AppLinks.tipJar else {
+            Issue.record("Expected tip jar URL to be configured")
+            return
+        }
+        #expect(tipJar.scheme == "https")
+        #expect(tipJar.host() == "buymeacoffee.com")
     }
 }

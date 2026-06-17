@@ -21,5 +21,13 @@ struct AccessibilityIdentifierContractTests {
     func settingsIDs() {
         #expect(A11yID.Settings.button == "settings.button")
         #expect(A11yID.Settings.deleteAllData == "settings.deleteAllData")
+        #expect(A11yID.Settings.exportCatalog == "settings.exportCatalog")
+        #expect(A11yID.Settings.importCatalog == "settings.importCatalog")
+    }
+
+    @Test("Split view placeholders are stable")
+    func splitIDs() {
+        #expect(A11yID.Split.selectSong == "split.selectSong")
+        #expect(A11yID.Split.selectProject == "split.selectProject")
     }
 }

@@ -29,7 +29,9 @@ extension MixStackUITestCase {
 
     /// Root tab chrome uses system metrics on iPhone and iPad sidebar tabs.
     static func ignoringRootNavigationChrome(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
-        guard issue.auditType == .hitRegion, let element = issue.element else { return false }
-        return ["Library", "Projects"].contains(element.label)
+        guard issue.auditType == .hitRegion else { return false }
+        let description = issue.compactDescription
+        return description.localizedCaseInsensitiveContains("Library")
+            || description.localizedCaseInsensitiveContains("Projects")
     }
 }

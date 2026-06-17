@@ -25,8 +25,11 @@ targets:
       - path: Resources/Assets.xcassets
         buildPhase: resources
     resources:
-      - path: Resources/README.md
-        optional: true
+      - path: Resources
+        excludes:
+          - "*.mp3"
+          - "AppIconConcepts/**"
+          - "README.md"
     postBuildScripts:
       - name: Copy Demo Audio
         basedOnDependencyAnalysis: false

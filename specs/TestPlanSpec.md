@@ -64,4 +64,5 @@ iPad-only split tests live in `IPadSplitUITests` (skipped on iPhone).
 
 ## Verification
 
-Last verified: 2026-06-16 — 98 unit tests + 10 UI tests across split schemes
+Last verified: 2026-06-16 — 97 unit tests + 10 UI tests across split schemes
+Local gate: `Scripts/ci/verify-local.sh` (SwiftLint + XcodeBuildMCP)

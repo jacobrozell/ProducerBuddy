@@ -5,6 +5,8 @@ class MixStackUITestCase: XCTestCase {
     static let seededSongTitle = "UITest Song"
     static let seededProjectTitle = "UITest EP"
     static let settingsButtonID = "settings.button"
+    static let splitSelectSongID = "split.selectSong"
+    static let splitSelectProjectID = "split.selectProject"
 
     let timeout: TimeInterval = 12
 
@@ -69,7 +71,8 @@ class MixStackUITestCase: XCTestCase {
 
     /// Skips when the UI test bundle is not running on an iPad simulator.
     func requireIPad() throws {
-        guard UIDevice.current.userInterfaceIdiom == .pad else {
+        let isPad = MainActor.assumeIsolated { UIDevice.current.userInterfaceIdiom == .pad }
+        guard isPad else {
             throw XCTSkip("Requires iPad simulator")
         }
     }

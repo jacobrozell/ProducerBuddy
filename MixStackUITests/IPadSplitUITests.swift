@@ -6,6 +6,10 @@ final class IPadSplitUITests: MixStackUITestCase {
 
         let app = launchAppOnIPad()
 
+        XCTAssertTrue(
+            app.descendants(matching: .any)[Self.splitSelectSongID].waitForExistence(timeout: timeout)
+        )
+
         let song = app.staticTexts[Self.seededSongTitle]
         XCTAssertTrue(song.waitForExistence(timeout: timeout))
         song.tap()
@@ -19,6 +23,10 @@ final class IPadSplitUITests: MixStackUITestCase {
         let app = launchAppOnIPad()
 
         tapTab(named: "Projects", in: app)
+        XCTAssertTrue(
+            app.descendants(matching: .any)[Self.splitSelectProjectID].waitForExistence(timeout: timeout)
+        )
+
         let project = app.staticTexts[Self.seededProjectTitle].firstMatch
         XCTAssertTrue(project.waitForExistence(timeout: timeout))
         project.tap()
