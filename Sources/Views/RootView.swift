@@ -12,10 +12,10 @@ struct RootView: View {
 
     var body: some View {
         TabView {
-            Tab("Library", systemImage: "music.note.list") {
+            Tab(L10n.tabLibrary, systemImage: "music.note.list") {
                 LibraryView()
             }
-            Tab("Projects", systemImage: "square.stack.3d.up") {
+            Tab(L10n.tabProjects, systemImage: "square.stack.3d.up") {
                 ProjectListView()
             }
         }

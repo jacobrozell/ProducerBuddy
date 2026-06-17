@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 /// App settings: appearance, feedback, external links, and data management.
 struct SettingsView: View {
@@ -22,21 +23,29 @@ struct SettingsView: View {
     @State private var isLoadingDemoTracks = false
     @State private var isOrganizingLibrary = false
     @State private var organizeResultMessage: String?
+    @State private var isExportingCatalog = false
+    @State private var catalogExportURL: URL?
+    @State private var showingCatalogExportShare = false
+    @State private var catalogStatusMessage: String?
+    @StateObject private var brandStore = BrandKitStore()
+    @State private var logoPickerItem: PhotosPickerItem?
+    @State private var accentColor = Brand.accent
 
     var body: some View {
         NavigationStack {
             Form {
                 appearanceSection
+                brandKitSection
                 importSection
                 feedbackSection
                 aboutSection
                 dataSection
             }
             .brandFormChrome()
-            .navigationTitle("Settings")
+            .navigationTitle(L10n.settingsTitle)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(L10n.done) { dismiss() }
                 }
             }
             .alert("Library Organized", isPresented: organizeResultPresented) {
@@ -44,6 +53,94 @@ struct SettingsView: View {
             } message: {
                 Text(organizeResultMessage ?? "")
             }
+            .alert("Catalog", isPresented: catalogStatusPresented) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(catalogStatusMessage ?? "")
+            }
+            .sheet(isPresented: $showingCatalogExportShare) {
+                if let catalogExportURL {
+                    CatalogExportShareSheet(exportURL: catalogExportURL) {
+                        showingCatalogExportShare = false
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(appearance.colorScheme)
+        .onAppear {
+            accentColor = Color(hex: brandStore.accentHex)
+        }
+        .onChange(of: logoPickerItem) { _, item in
+            guard let item else { return }
+            Task { await importLogo(from: item) }
+        }
+    }
+
+    private var brandKitSection: some View {
+        Section {
+            ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
+                .accessibilityIdentifier(A11yID.Settings.brandKit)
+                .onChange(of: accentColor) { _, newValue in
+                    if let hex = newValue.toHexRGB() {
+                        brandStore.accentHex = hex
+                        brandStore.persist()
+                    }
+                }
+
+            TextField("Display name", text: $brandStore.displayName)
+                .onChange(of: brandStore.displayName) { _, _ in brandStore.persist() }
+
+            TextField("Tagline", text: $brandStore.tagline)
+                .onChange(of: brandStore.tagline) { _, _ in brandStore.persist() }
+
+            Picker("Card style", selection: $brandStore.cardStyle) {
+                ForEach(BrandCardStyle.allCases) { style in
+                    Text(style.displayName).tag(style)
+                }
+            }
+            .onChange(of: brandStore.cardStyle) { _, _ in brandStore.persist() }
+
+            PhotosPicker(selection: $logoPickerItem, matching: .images) {
+                Label(brandStore.logoFilename == nil ? "Add Logo" : "Replace Logo", systemImage: "photo")
+            }
+
+            if brandStore.logoFilename != nil {
+                Button("Remove Logo", role: .destructive) {
+                    brandStore.removeLogo()
+                }
+            }
+
+            BrandKitPreviewCard(
+                accent: accentColor,
+                displayName: brandStore.displayName,
+                tagline: brandStore.tagline,
+                cardStyle: brandStore.cardStyle,
+                logoFilename: brandStore.logoFilename
+            )
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+            Button("Restore Brand Defaults") {
+                brandStore.restoreDefaults()
+                accentColor = Color(hex: brandStore.accentHex)
+            }
+        } header: {
+            Text("Brand Kit")
+        } footer: {
+            Text("Accent, logo, and tagline appear on share cards and audiograms — not the app chrome.")
+        }
+    }
+
+    @MainActor
+    private func importLogo(from item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else { return }
+        if let existing = brandStore.logoFilename {
+            BrandStorage.deleteFile(named: existing)
+        }
+        if let fileName = try? BrandStorage.importLogo(image: image) {
+            brandStore.logoFilename = fileName
+            brandStore.persist()
+            Haptics.success()
         }
     }
 
@@ -108,6 +205,13 @@ struct SettingsView: View {
 
     private var dataSection: some View {
         Section {
+            SettingsCatalogSection(
+                songs: songs,
+                isExportingCatalog: isExportingCatalog,
+                onExport: exportCatalog,
+                onImportComplete: { catalogStatusMessage = $0 }
+            )
+
             if DemoAudioSeeder.hasBundleTracks {
                 Button {
                     loadDemoTracks()
@@ -158,6 +262,13 @@ struct SettingsView: View {
         )
     }
 
+    private var catalogStatusPresented: Binding<Bool> {
+        Binding(
+            get: { catalogStatusMessage != nil },
+            set: { if !$0 { catalogStatusMessage = nil } }
+        )
+    }
+
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
@@ -174,7 +285,25 @@ struct SettingsView: View {
         for project in projects {
             modelContext.delete(project)
         }
+        BrandKitSettings.restoreDefaults()
         Haptics.success()
+    }
+
+    @MainActor
+    private func exportCatalog() {
+        guard !isExportingCatalog else { return }
+        isExportingCatalog = true
+        Task {
+            defer { isExportingCatalog = false }
+            do {
+                let url = try CatalogExporter.export(from: modelContext)
+                catalogExportURL = url
+                showingCatalogExportShare = true
+                Haptics.success()
+            } catch {
+                catalogStatusMessage = "Export failed: \(error.localizedDescription)"
+            }
+        }
     }
 
     @MainActor
