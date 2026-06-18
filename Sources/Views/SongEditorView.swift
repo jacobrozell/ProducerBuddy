@@ -40,6 +40,10 @@ struct SongEditorView: View {
 
     private var isEditing: Bool { song != nil }
 
+    private func dismissKeyboard() {
+        focusedField = nil
+    }
+
     private var bpmBinding: Binding<Double> {
         Binding(
             get: { Double(bpm) },
@@ -62,8 +66,9 @@ struct SongEditorView: View {
                     TextField("Genre", text: $genre)
                         .focused($focusedField, equals: .genre)
                         .submitLabel(.done)
-                        .onSubmit { focusedField = nil }
+                        .onSubmit(dismissKeyboard)
                 }
+                .brandFormRowBackground()
 
                 Section {
                     bpmControl
@@ -72,12 +77,14 @@ struct SongEditorView: View {
                             Text(key.displayName).tag(key)
                         }
                     }
+                    .dismissesKeyboardOnChange(of: key, using: dismissKeyboard)
                     Picker("Vocals", selection: $vocalPresence) {
                         ForEach(VocalPresence.allCases) { option in
                             Label(option.pickerName, systemImage: option.symbolName)
                                 .tag(option)
                         }
                     }
+                    .dismissesKeyboardOnChange(of: vocalPresence, using: dismissKeyboard)
                 } header: {
                     Text("Musical")
                 } footer: {
@@ -86,6 +93,7 @@ struct SongEditorView: View {
                         + "Other options override detection."
                     )
                 }
+                .brandFormRowBackground()
 
                 Section("Workflow") {
                     Picker("Category", selection: $category) {
@@ -94,10 +102,13 @@ struct SongEditorView: View {
                                 .tag(category)
                         }
                     }
+                    .dismissesKeyboardOnChange(of: category, using: dismissKeyboard)
                     LabeledContent("Rating") {
                         StarRatingView(rating: $rating)
                     }
+                    .dismissesKeyboardOnChange(of: rating, using: dismissKeyboard)
                 }
+                .brandFormRowBackground()
 
                 Section {
                     TextField("Export prefix", text: $exportPrefix)
@@ -105,7 +116,7 @@ struct SongEditorView: View {
                         .autocorrectionDisabled()
                         .focused($focusedField, equals: .exportPrefix)
                         .submitLabel(.done)
-                        .onSubmit { focusedField = nil }
+                        .onSubmit(dismissKeyboard)
                         .accessibilityIdentifier(A11yID.Song.exportPrefix)
                         .onChange(of: exportPrefix) { _, newValue in
                             validatePrefix(newValue)
@@ -122,16 +133,20 @@ struct SongEditorView: View {
                 } footer: {
                     Text("Files starting with this prefix import as new versions of this song.")
                 }
+                .brandFormRowBackground()
 
                 Section("Notes") {
                     TextField("Notes", text: $notes, axis: .vertical)
                         .lineLimit(3...8)
                         .focused($focusedField, equals: .notes)
+                        .submitLabel(.done)
+                        .onSubmit(dismissKeyboard)
                 }
+                .brandFormRowBackground()
 
                 releaseSection
             }
-            .scrollDismissesKeyboard(.interactively)
+            .scrollDismissesKeyboard(.immediately)
             .brandFormChrome()
             .navigationTitle(isEditing ? "Edit Song" : "New Song")
             .navigationBarTitleDisplayMode(.inline)
@@ -145,7 +160,7 @@ struct SongEditorView: View {
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Done") { focusedField = nil }
+                    Button("Done", action: dismissKeyboard)
                 }
             }
             .onAppear(perform: loadIfEditing)
@@ -171,47 +186,62 @@ struct SongEditorView: View {
             Slider(value: bpmBinding, in: 40...300, step: 1)
                 .accessibilityLabel("BPM")
                 .accessibilityValue("\(bpm) beats per minute")
+                .dismissesKeyboardOnChange(of: bpm, using: dismissKeyboard)
         }
     }
 
     private var releaseSection: some View {
         Section {
             Toggle("Release date", isOn: $hasReleaseDate)
+                .dismissesKeyboardOnChange(of: hasReleaseDate, using: dismissKeyboard)
             if hasReleaseDate {
                 DatePicker("Date", selection: $releaseDate, displayedComponents: .date)
+                    .dismissesKeyboardOnChange(of: releaseDate, using: dismissKeyboard)
             }
             Picker("Distributor", selection: $distributorPreset) {
                 ForEach(DistributorPreset.allCases) { preset in
                     Text(preset.displayName).tag(preset)
                 }
             }
+            .dismissesKeyboardOnChange(of: distributorPreset, using: dismissKeyboard)
             if distributorPreset == .other {
                 TextField("Distributor name", text: $distributorOther)
                     .focused($focusedField, equals: .distributorOther)
+                    .submitLabel(.next)
+                    .onSubmit { focusedField = .spotify }
             }
             TextField("Spotify URL", text: $spotifyURL)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 .focused($focusedField, equals: .spotify)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .appleMusic }
             urlValidationText(spotifyURL)
             TextField("Apple Music URL", text: $appleMusicURL)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 .focused($focusedField, equals: .appleMusic)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .soundcloud }
             urlValidationText(appleMusicURL)
             TextField("SoundCloud URL", text: $soundcloudURL)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 .focused($focusedField, equals: .soundcloud)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .releaseNotes }
             urlValidationText(soundcloudURL)
             TextField("Release notes", text: $releaseNotes, axis: .vertical)
                 .lineLimit(2...6)
                 .focused($focusedField, equals: .releaseNotes)
+                .submitLabel(.done)
+                .onSubmit(dismissKeyboard)
         } header: {
             Text("Release")
         } footer: {
             Text("Paste streaming links after your distributor upload goes live.")
         }
+        .brandFormRowBackground()
     }
 
     @ViewBuilder

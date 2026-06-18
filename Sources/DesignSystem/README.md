@@ -9,7 +9,8 @@ Layered tokens matching the MiniMuster / Dart Buddy pattern: **Brand** for produ
 | `DS.Typography` | `Tokens/DesignTokens.swift` | Serif display + stat values |
 | `.brandTabChrome()` | `Tokens/BrandChrome.swift` | Root tab shell |
 | `.brandHeroBackground()` | `Tokens/BrandChrome.swift` | Onboarding, splash |
-| `.brandFormChrome()` | `Tokens/BrandChrome.swift` | Settings forms |
+| `.brandFormChrome()` | `Tokens/BrandChrome.swift` | Settings and editor forms |
+| `.brandFormRowBackground()` | `Tokens/BrandChrome.swift` | Branded grouped-list rows |
 | `AdaptiveLayout` | `AdaptiveLayout.swift` | Landscape + Dynamic Type helpers |
 | `minimumTapTarget()` | `AdaptiveLayout.swift` | 44×44 pt controls |
 | `StatTile` | `Components/StatTile.swift` | Library / project stat grids |

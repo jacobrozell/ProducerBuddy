@@ -42,6 +42,8 @@ struct SettingsView: View {
                 dataSection
             }
             .brandFormChrome()
+            .preferredColorScheme(appearance.colorScheme)
+            .id(appearance.rawValue)
             .navigationTitle(L10n.settingsTitle)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -66,7 +68,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .preferredColorScheme(appearance.colorScheme)
         .onAppear {
             accentColor = Color(hex: brandStore.accentHex)
         }
@@ -129,6 +130,7 @@ struct SettingsView: View {
         } footer: {
             Text("Accent, logo, and tagline appear on share cards and audiograms — not the app chrome.")
         }
+        .brandFormRowBackground()
     }
 
     @MainActor
@@ -154,6 +156,7 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
         }
+        .brandFormRowBackground()
     }
 
     private var importSection: some View {
@@ -170,12 +173,14 @@ struct SettingsView: View {
                 + "Uncertain matches open an import review sheet."
             )
         }
+        .brandFormRowBackground()
     }
 
     private var feedbackSection: some View {
         Section("Feedback") {
             Toggle("Haptics", isOn: $hapticsEnabled)
         }
+        .brandFormRowBackground()
     }
 
     private var aboutSection: some View {
@@ -202,6 +207,7 @@ struct SettingsView: View {
             }
             LabeledContent("Version", value: appVersion)
         }
+        .brandFormRowBackground()
     }
 
     private var dataSection: some View {
@@ -254,6 +260,7 @@ struct SettingsView: View {
         } footer: {
             Text("\(songs.count) songs · \(projects.count) projects")
         }
+        .brandFormRowBackground()
     }
 
     private var organizeResultPresented: Binding<Bool> {
