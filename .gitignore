@@ -34,3 +34,5 @@ Resources/*.aiff
 *.ipa
 *.dSYM.zip
 *.dSYM
+.cursor/mcp.json
+.xcodebuildmcp/

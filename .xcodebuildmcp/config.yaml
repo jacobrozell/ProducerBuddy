@@ -1,7 +1,0 @@
-schemaVersion: 1
-sessionDefaults:
-  projectPath: /Users/jrozell/Desktop/personal/MixStack/MixStack.xcodeproj
-  scheme: MixStackCI
-  simulatorName: iPhone 17
-  simulatorPlatform: iOS Simulator
-  bundleId: com.jacobrozell.mixstack
