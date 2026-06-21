@@ -14,6 +14,10 @@ echo "::group::SwiftLint"
 swiftlint --strict
 echo "::endgroup::"
 
+echo "::group::Spec drift"
+python3 Scripts/ci/check-spec-drift.py
+echo "::endgroup::"
+
 run_test() {
   local scheme="$1"
   local sim="$2"

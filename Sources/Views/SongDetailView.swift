@@ -16,6 +16,7 @@ struct SongDetailView: View {
     @State private var mixPendingDelete: Mix?
     @State private var songPendingDeleteAfterLastMix = false
     @State private var mixToEdit: Mix?
+    @State private var showingCompare = false
 
     var body: some View {
         List {
@@ -90,6 +91,9 @@ struct SongDetailView: View {
             if let mix = song.primaryMix {
                 AudiogramExportSheet(mix: mix, song: song)
             }
+        }
+        .sheet(isPresented: $showingCompare) {
+            VersionCompareView(song: song)
         }
         .overlay(alignment: .bottom) {
             if isDetecting {
@@ -243,15 +247,24 @@ struct SongDetailView: View {
             }
         } header: {
             HStack {
-                Text("Versions")
+                Text(L10n.versionsTitle)
                 Spacer()
+                if song.mixes.count >= 2 {
+                    Button {
+                        showingCompare = true
+                    } label: {
+                        Text(L10n.compareTitle)
+                            .font(.subheadline)
+                    }
+                    .accessibilityIdentifier(A11yID.Song.compare)
+                }
                 if !song.mixes.isEmpty {
                     Button {
                         showingImporter = true
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .accessibilityLabel("Add version")
+                    .accessibilityLabel(L10n.addVersion)
                 }
             }
         }

@@ -216,6 +216,7 @@ enum AudiogramRenderer {
     private static func pixelSize(for format: CardFormat) -> CGSize {
         switch format {
         case .square: return CGSize(width: 1080, height: 1080)
+        case .banner: return CGSize(width: 1920, height: 1080)
         case .story: return CGSize(width: 1080, height: 1920)
         }
     }

@@ -3,14 +3,24 @@ import SwiftUI
 /// Output shape for a generated share image.
 enum CardFormat: String, CaseIterable, Identifiable, Sendable {
     case square = "Square"
+    case banner = "Banner"
     case story = "Story"
 
     var id: String { rawValue }
+
+    var localizedName: String {
+        switch self {
+        case .square: return L10n.shareFormatSquare
+        case .banner: return L10n.shareFormatBanner
+        case .story: return L10n.shareFormatStory
+        }
+    }
 
     /// Point size of the card; rendered at 3× for crisp social-ready pixels.
     var size: CGSize {
         switch self {
         case .square: return CGSize(width: 340, height: 340)
+        case .banner: return CGSize(width: 340, height: 191) // 16:9
         case .story: return CGSize(width: 340, height: 604) // 9:16
         }
     }
@@ -191,7 +201,11 @@ struct ShareCardView: View {
     }
 
     private var titleSize: CGFloat {
-        format == .story ? 40 : 32
+        switch format {
+        case .story: return 40
+        case .banner: return 28
+        case .square: return 32
+        }
     }
 
     private var tint: Color {
@@ -210,7 +224,11 @@ struct ShareCardView: View {
     }
 
     private func trackLimit() -> Int {
-        format == .story ? 12 : 5
+        switch format {
+        case .story: return 12
+        case .banner: return 3
+        case .square: return 5
+        }
     }
 
     private func visibleTracks(_ project: Project) -> [ProjectTrack] {

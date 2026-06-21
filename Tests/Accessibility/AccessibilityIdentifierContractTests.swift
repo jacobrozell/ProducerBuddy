@@ -25,6 +25,12 @@ struct AccessibilityIdentifierContractTests {
         #expect(A11yID.Settings.importCatalog == "settings.importCatalog")
     }
 
+    @Test("Song identifiers are stable")
+    func songIDs() {
+        #expect(A11yID.Song.versionStack == "song.versionStack")
+        #expect(A11yID.Song.compare == "song.compare")
+    }
+
     @Test("Split view placeholders are stable")
     func splitIDs() {
         #expect(A11yID.Split.selectSong == "split.selectSong")

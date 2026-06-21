@@ -63,7 +63,7 @@ struct AudiogramExportSheet: View {
 
                     Picker("Format", selection: $format) {
                         ForEach(CardFormat.allCases) { option in
-                            Text(option.rawValue).tag(option)
+                            Text(option.localizedName).tag(option)
                         }
                     }
                     .pickerStyle(.segmented)

@@ -25,8 +25,16 @@ struct ShareCardTests {
         #expect(abs(ratio - 9.0 / 16.0) < 0.02)
     }
 
-    @Test("Both formats are offered to the user")
+    @Test("Banner format is 16:9 landscape")
+    func bannerIsLandscape() {
+        let banner = CardFormat.banner.size
+        #expect(banner.width > banner.height)
+        let ratio = banner.width / banner.height
+        #expect(abs(ratio - 16.0 / 9.0) < 0.02)
+    }
+
+    @Test("All share formats are offered to the user")
     func allFormatsAvailable() {
-        #expect(CardFormat.allCases.count == 2)
+        #expect(CardFormat.allCases.count == 3)
     }
 }

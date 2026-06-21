@@ -21,6 +21,7 @@ enum A11yID {
         static let shareCard = "song.shareCard"
         static let vocalMeter = "song.vocalMeter"
         static let versionStack = "song.versionStack"
+        static let compare = "song.compare"
         static let exportPrefix = "song.exportPrefix"
         static let releaseLinks = "song.releaseLinks"
         static let exportAudiogram = "song.exportAudiogram"

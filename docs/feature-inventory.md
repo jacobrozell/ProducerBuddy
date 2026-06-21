@@ -22,12 +22,12 @@ Status legend: ✅ shipped · 🟡 partial · 🧪 unverified · ⛔ not started
 | Library | Advanced filters (BPM range, key, favorites) | ✅ | ✅ | `LibraryFiltersSheet`, `LibraryFilterLogic` |
 | Library | Section headers (BPM / rating sort) | ✅ | ✅ | `LibraryFilterLogic` |
 | Library | Import progress + failure alerts | ✅ | ✅ | `AudioImporter`, `ImportProgressBannerView` |
-| Library | Version-aware import (prefix, resolution) | 🟡 | ✅ | `ImportPlanner`, `ImportResolutionSheet`, `VersionStackTests` |
+| Library | Version-aware import (prefix, resolution) | 🟡 | ✅ | `ImportPlanner`, `ImportResolutionSheet`, `ImportMatcher` |
 | Projects | Delete confirmation | ✅ | ✅ | `ProjectListView`, `LibraryView` |
 | Library | Auto BPM & key detection | ✅ | ✅ | `AudioAnalyzer` |
 | Library | Vocal detection + confidence | ✅ | ✅ | `AudioAnalyzer`, `VocalConfidenceMeter` |
 | Library | LUFS loudness per mix | ✅ | ✅ | `LoudnessAnalyzer`, `SongDetailView` |
-| Songs | Multiple mixes, primary mix, roles | 🟡 | ✅ | `Mix`, `SongDetailView`, `VersionStackRow` |
+| Songs | Multiple mixes, primary mix, roles | 🟡 | ✅ | `Mix`, `SongDetailView`, `VersionStackRow`, `VersionCompareView` |
 | Songs | Release tracking (date, links, distributor) | ✅ | ✅ | `Song`, `SongEditorView`, `ReleaseInfoCard` |
 | Songs | Star rating, workflow category | ✅ | ✅ | `Song`, `StarRatingView` |
 | Playback | Now-playing bar + full player | ✅ | ✅ | `NowPlayingBar`, `FullPlayerView` |
@@ -42,17 +42,17 @@ Status legend: ✅ shipped · 🟡 partial · 🧪 unverified · ⛔ not started
 | Projects | Energy curve chart + badge popovers | ✅ | ✅ | `EnergyCurveChart`, `TrackFlowRow` |
 | Projects | Suggest order + diff preview | ✅ | ✅ | `SuggestOrderPreviewSheet`, `SequencingEngine.orderMoves` |
 | Sharing | Text blurb / tracklist | ✅ | ✅ | `SongDetailView`, `ProjectDetailView` |
-| Sharing | Visual release cards (PNG) | ✅ | ✅ | `ShareCardView`, `ReleaseCardRenderer` |
-| Sharing | Brand kit on share surfaces | ✅ | ✅ | `BrandKitStore`, `SettingsView` |
+| Sharing | Visual release cards (PNG) | ✅ | ✅ | `ShareCardView`, `ReleaseCardRenderer` (square, banner 16:9, story) |
+| Sharing | Brand kit on share surfaces | ✅ | ✅ | `BrandKitSettings`, `SettingsView` |
 | Sharing | Audiogram video export | ✅ | 🧪 | `AudiogramRenderer`, `AudiogramExportSheet` |
 | Settings | Appearance, haptics, links, delete-all | ✅ | ✅ | `SettingsView` |
 | Settings | Catalog export / import (ZIP) | ✅ | ✅ | `CatalogExporter`, `CatalogImporter`, `CatalogSyncTests` |
 | Platform | Release-surface gating | ✅ | ✅ | `ReleaseSurface` |
 | Platform | Accessibility (engineering pass) | ✅ | ✅ | `MixStackUIAccessibility` (4 tests) |
-| Platform | Localization | 🟡 | — | `L10n.swift` + `Localizable.xcstrings` (partial; most UI en hard-coded) |
+| Platform | Localization | 🟡 | ✅ | `L10n` + `Localizable.xcstrings` + parity test; most UI still hard-coded |
 | Platform | iCloud sync | ⛔ | — | — |
 | Platform | Onboarding / first-run | ✅ | ✅ | `OnboardingView`, `RootView` |
-| Platform | Repository layer / DI container | ⛔ | — | views use `modelContext` directly |
+| Platform | Repository layer / DI container | 🟡 | ✅ | `SongRepository`, `ProjectRepository`, `AppDependencies` |
 | Platform | Schema versioning / migration | ⛔ | — | single implicit schema |
-| Platform | Unit tests / local build | ✅ | ✅ | 116 unit + 10 UI; SwiftLint strict ✅ |
-| Platform | GitHub Actions CI | ✅ | 🧪 | `.github/workflows/ci.yml` mirrors `verify-local.sh` |
+| Platform | Unit tests / local build | ✅ | ✅ | `MixStackCI`, `Scripts/ci/verify-local.sh` (121 unit + 10 UI) |
+| Platform | GitHub Actions CI | ✅ | 🧪 | `.github/workflows/ci.yml`, `Scripts/ci/verify-local.sh` |

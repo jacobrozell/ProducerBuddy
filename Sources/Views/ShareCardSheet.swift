@@ -15,7 +15,7 @@ struct ShareCardSheet: View {
             VStack(spacing: 24) {
                 Picker("Format", selection: $format) {
                     ForEach(CardFormat.allCases) { format in
-                        Text(format.rawValue).tag(format)
+                        Text(format.localizedName).tag(format)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -46,7 +46,7 @@ struct ShareCardSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(L10n.done) { dismiss() }
                 }
             }
             // Re-render whenever the chosen format changes.

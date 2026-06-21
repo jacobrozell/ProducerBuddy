@@ -38,6 +38,7 @@ ShareCardSheet → ShareCardView (preview)
 | Format | Points | Pixels @3× |
 |--------|--------|------------|
 | square | 340×340 | 1020×1020 |
+| banner | 340×191 | 1020×573 |
 | story | 340×604 | 1020×1812 |
 
 ### ShareCardView (`Sources/Components/ShareCardView.swift`)

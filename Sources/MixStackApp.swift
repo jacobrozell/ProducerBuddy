@@ -20,9 +20,19 @@ struct MixStackApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            DependencyRoot()
                 .environment(audioPlayer)
         }
         .modelContainer(modelContainer)
+    }
+}
+
+/// Injects repositories once `modelContext` is available from the container.
+private struct DependencyRoot: View {
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        RootView()
+            .environment(\.appDependencies, .live(context: modelContext))
     }
 }

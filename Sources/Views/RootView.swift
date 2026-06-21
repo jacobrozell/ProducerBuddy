@@ -5,6 +5,7 @@ import SwiftData
 /// bar whenever a mix is loaded.
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appDependencies) private var appDependencies
     @Environment(AudioPlayer.self) private var audioPlayer
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: AppAppearance = .system
@@ -50,7 +51,12 @@ struct RootView: View {
     @MainActor
     private func seedDemoTracksIfNeeded() async {
         guard DemoAudioSeeder.isRequested else { return }
-        let existing = (try? modelContext.fetchCount(FetchDescriptor<Song>())) ?? 0
+        let existing: Int
+        if let repo = appDependencies?.songRepository {
+            existing = (try? repo.fetchCount()) ?? 0
+        } else {
+            existing = (try? modelContext.fetchCount(FetchDescriptor<Song>())) ?? 0
+        }
         guard existing == 0 else { return }
         let imported = await DemoAudioSeeder.importBundleTracks()
         guard !imported.isEmpty else { return }

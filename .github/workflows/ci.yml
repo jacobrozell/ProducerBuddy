@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: swiftlint --strict
 
+      - name: Spec drift
+        run: python3 Scripts/ci/check-spec-drift.py
+
   build:
     name: Build for Testing
     runs-on: macos-15
