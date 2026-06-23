@@ -23,6 +23,7 @@ Plans and projects **in implementation** — approved, specced, and actively bei
 
 - Ship blockers: [`docs/release/todo.md`](../docs/release/todo.md)
 - Deferred iCloud: [`specs/CatalogSync.md`](../specs/CatalogSync.md)
+- Shared tempo SPM (BeatMic engine): [`FutureIdeas/backlog.md`](../FutureIdeas/backlog.md)
 
 ## Finished (archive)
 
